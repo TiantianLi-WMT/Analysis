@@ -1,0 +1,175 @@
+
+
+create or replace table wmt-everest.mfc_data.top_market_analysis_base_query as 
+
+with store_bu_mapping as (
+select distinct
+  SUBDIV_NM
+  , REGION_NM
+  , STORE_NBR
+  , STORE_NAME
+  , STATE
+  , BANNER_DESC
+  , BUO_AREA_MGR_NM
+  , SUBDIV_MGR_NM
+from wmt-everest.mfc_data.store_bu_mapping
+)
+
+, store_summary as (
+select
+  site_nbr
+  , site_lat
+  , site_lng
+  , cbsa
+  , market_id
+  , list_of_stores
+  -- , ub_ogd_fy24
+  -- , ub_ogd_fy29
+  -- , ogp_fy24
+  -- , ogp_fy29
+  -- , banner
+  -- , primary_demand
+  -- , pickup_demand
+from wmt-everest.mfc_data.store_summary_us_20_25_29
+)
+
+, market_summary as (
+select
+  cbsa
+  , market_id
+  , num_of_stores
+  , num_of_SUP
+from wmt-everest.mfc_data.market_summary_us_20_25_29
+)
+
+, uplh as (
+select
+  STORE_NBR
+  , avg(UPLH) avg_UPLH
+from wmt-everest.mfc_data.UPLH_historicals
+where 1=1
+  and WM_YR_WK_NBR between 202324 and 202335
+  and UPLH != 0
+group by 1
+)
+
+-- Order basket and size for OPD and DFS
+, gmv_prep as (
+select
+  site_id
+  , case 
+      when fulfmt_type in ('OG_regular_delivery','OG_regular_pickup') then 'OPD'  -- should we include express, in home?
+      when fulfmt_type in ('DFS', 'SFS') then 'DFS'
+      else 'Other' end Demand_Type
+  , sum(orders) orders
+  , sum(fulfmt_orders) fulfmt_orders
+  , sum(units) units
+  , sum(GMV) GMV
+  , safe_divide(sum(GMV), sum(fulfmt_orders)) order_basket
+  , safe_divide(sum(units), sum(fulfmt_orders)) order_size
+from wmt-everest.mfc_data.monthly_gmv_by_store_and_fulfillment_type
+group by 1,2
+)
+
+, opd_orders as (
+select 
+  site_id
+  , order_basket OPD_order_basket
+  , order_size OPD_order_size
+from gmv_prep
+where Demand_Type = 'OPD' 
+)
+
+, dfs_orders as (
+select 
+  site_id
+  , order_basket DFS_order_basket
+  , order_size DFS_order_size
+from gmv_prep
+where Demand_Type = 'DFS' 
+)
+
+, gmv_output as (
+select
+  a.*
+  , b.DFS_order_basket
+  , b.DFS_order_size
+from opd_orders a
+left join dfs_orders b on a.site_id = b.site_id
+)
+
+
+-- unscheduled daily orders actuals (past 3 months)
+, unscheduled_orders_prep as (
+select 
+  site_id
+  , month_id
+  , year_id
+  , sum(demand_orders) / 31 daily_avg_demand
+from `wmt-everest.AUM.lmd_hist_pixel_source_demand` 
+where 1=1 
+  and fulfmt_type in ('FC_sort', 'DFS', 'SFS')
+  and year_id = 2023 
+  and month_id in (7,8,9)
+group by 1,2,3
+)
+
+, unscheduled_orders as (
+select
+  site_id
+  , avg(daily_avg_demand) unscheduled_daily_orders
+from unscheduled_orders_prep
+group by 1
+)
+
+
+select 
+  a.*
+  , b.SUBDIV_NM
+  , b.REGION_NM
+  , b.STATE
+  , b.BANNER_DESC
+  , b.SUBDIV_MGR_NM
+  , c.num_of_stores
+  , c.num_of_SUP
+  , d.MPC current_mpc
+  , e.Type
+  , e.Current_Soln
+  , f.Pick_up_2_0_3_0_Capacity  -- as a reference for now
+  , g.Programs___Initiatives MFC_Submission_Type
+  , right(left(Sub_Initiatives, 4),2) MFC_Submission_FY
+  , g.Project_Owner
+  , g.Go_Live MFC_Submission_GoLive
+  , right(cast(h.PY as string), 2) MFC_Approved_PY
+  , coalesce(i.Possession, i.GO_Date) Remodel_Date
+  , i.Project_Type
+  , i.Project_Status
+  , j.FY24 FY24_UB
+  , j.FY29 FY29_UB
+  , k.avg_UPLH
+  , l.OPD_order_basket
+  , l.OPD_order_size
+  , l.DFS_order_basket
+  , l.DFS_order_size
+  , m.unscheduled_daily_orders
+from store_summary a 
+left join store_bu_mapping b on a.site_nbr = b.STORE_NBR
+left join market_summary c on a.market_id = c.market_id
+left join wmt-everest.mfc_data.store_current_mpc d on a.site_nbr = d.store
+left join (select distinct Store, Type, Current_Soln from wmt-everest.mfc_data.store_metrics) e on a.site_nbr = e.Store   -- select distinct due to duplicates
+left join (select distinct Store, Pick_up_2_0_3_0_Capacity from wmt-everest.mfc_data.store_attributes where Pick_up_2_0_3_0_Capacity is not null and Pick_up_2_0_3_0_Capacity != '0') f on a.site_nbr = f.Store   -- select distinct due to duplicates
+left join wmt-everest.mfc_data.mfc_aop_submission g on a.site_nbr = g.store
+left join wmt-everest.mfc_data.approved_new_stores h on a.site_nbr = h.Str__
+left join wmt-everest.mfc_data.store_remodel_plan i on a.site_nbr = i.Store_Number
+-- fcst
+left join wmt-everest.mfc_data.store_ub_rebaseline_fcst j on a.site_nbr = j.Store
+-- current demand
+-- uplh   
+left join uplh k on a.site_nbr = k.STORE_NBR
+-- gmv
+left join gmv_output l on a.site_nbr = cast(l.site_id as int64)
+-- unscheduled daily orders actuals
+left join unscheduled_orders m on a.site_nbr = cast(m.site_id as int64)
+
+
+
