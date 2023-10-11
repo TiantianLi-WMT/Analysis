@@ -9,7 +9,7 @@ with store_bu_mapping as (
 select distinct
   SUBDIV_NM
   , REGION_NM
-  , STORE_NBR
+  , STORE_NBR     
   , STORE_NAME
   , STATE
   , BANNER_DESC
@@ -56,13 +56,13 @@ where 1=1
 group by 1
 )
 
--- Order basket and size for OPD and DFS
+-- Order basket and size for Scheduled and Unscheduled
 , gmv_prep as (
 select
   site_id
   , case 
-      when fulfmt_type in ('OG_regular_delivery','OG_regular_pickup') then 'OPD'  -- should we include express, in home?
-      when fulfmt_type in ('DFS', 'SFS') then 'DFS'
+      when fulfmt_type in ('OG_regular_delivery','OG_regular_pickup','InHome_delivery') then 'Scheduled' 
+      when fulfmt_type in ('DFS', 'SFS') then 'Unscheduled'
       else 'Other' end Demand_Type
   , sum(orders) orders
   , sum(fulfmt_orders) fulfmt_orders
@@ -74,31 +74,34 @@ from wmt-everest.mfc_data.monthly_gmv_by_store_and_fulfillment_type
 group by 1,2
 )
 
-, opd_orders as (
+, scheduled_orders_gmv as (
 select 
   site_id
-  , order_basket OPD_order_basket
-  , order_size OPD_order_size
+  , order_basket order_basket_scheduled
+  , order_size order_size_scheduled
+  , GMV GMV_scheduled
+  , fulfmt_orders fulfmt_orders_scheduled
 from gmv_prep
-where Demand_Type = 'OPD' 
+where Demand_Type = 'Scheduled' 
 )
 
-, dfs_orders as (
+, unscheduled_orders_gmv as (
 select 
   site_id
-  , order_basket DFS_order_basket
-  , order_size DFS_order_size
+  , order_basket order_basket_unscheduled
+  , order_size order_size_unscheduled
+  , GMV GMV_unscheduled
+  , fulfmt_orders fulfmt_orders_unscheduled
 from gmv_prep
-where Demand_Type = 'DFS' 
+where Demand_Type = 'Unscheduled' 
 )
 
 , gmv_output as (
 select
   a.*
-  , b.DFS_order_basket
-  , b.DFS_order_size
-from opd_orders a
-left join dfs_orders b on a.site_id = b.site_id
+  , b.* except(site_id)
+from scheduled_orders_gmv a
+left join unscheduled_orders_gmv b on a.site_id = b.site_id
 )
 
 
@@ -125,6 +128,27 @@ from unscheduled_orders_prep
 group by 1
 )
 
+-- one demand forecast
+, one_demand_fcst_prep as (
+select
+  StoreId
+  , extract(year from FY_Date) FY
+  , (sum(Sch_Delivery) + sum(Sch_Pickup) + sum(InHome)) / 360 Scheduled_Demand
+from wmt-everest.mfc_data.store_one_demand_fcst
+where 1=1
+  and extract(year from FY_Date) >= 2024
+group by 1,2
+order by 1,2
+)
+
+, one_demand_fcst as (
+select * from one_demand_fcst_prep
+pivot
+(
+  sum(round(Scheduled_Demand))  
+  FOR cast(FY as int64) in (2024,2025,2026)
+)
+)
 
 select 
   a.*
@@ -139,15 +163,19 @@ select
   , e.Type
   , e.Current_Soln
   , f.Pick_up_2_0_3_0_Capacity  -- as a reference for now
-  , g.Programs___Initiatives MFC_Submission_Type
-  , case 
-      when g.Programs___Initiatives = 'Manual MFCs' then 1100 
-      when g.Programs___Initiatives = 'Auto MFC' then 1500 
-      else null end MFC_capacity
-  , right(left(Sub_Initiatives, 4),2) MFC_Submission_FY
-  , g.Project_Owner
-  , g.Go_Live MFC_Submission_GoLive
+  -- , g.Programs___Initiatives MFC_Submission_Type
+  -- , case 
+  --     when g.Programs___Initiatives = 'Manual MFCs' then 1100 
+  --     when g.Programs___Initiatives = 'Auto MFC' then 1500 
+  --     else null end MFC_capacity
+  -- , right(left(Sub_Initiatives, 4),2) MFC_Submission_FY
+  -- , g.Project_Owner
+  -- , g.Go_Live MFC_Submission_GoLive
+  -- MFC Capacity
   , right(cast(h.PY as string), 2) MFC_Approved_PY
+  , case when MFC_Project_Kickoff = 'MMFC' then 1100 else 1300 end MFC_MPC
+  , case when MFC_Project_Kickoff = 'MMFC' then 'MMFC' else 'Gen1_AMFC' end MFC_Type
+  -- PU2.0 Remodel
   , coalesce(i.Possession, i.GO_Date) Remodel_Date
   , i.Project_Type
   , i.Project_Status
@@ -163,11 +191,18 @@ select
   , cast(replace(j.FY32,'-','0') as int64) FY32_UB
   , cast(replace(j.FY33,'-','0') as int64) FY33_UB
   , cast(replace(j.FY34,'-','0') as int64) FY34_UB
+  , n._2024 FY24_OD
+  , n._2025 FY25_OD
+  , n._2026 FY26_OD
   , k.avg_UPLH
-  , l.OPD_order_basket
-  , l.OPD_order_size
-  , l.DFS_order_basket
-  , l.DFS_order_size
+  , l.order_basket_scheduled
+  , l.order_size_scheduled
+  , l.GMV_scheduled
+  , l.fulfmt_orders_scheduled
+  , l.order_basket_unscheduled
+  , l.order_size_unscheduled
+  , l.GMV_unscheduled
+  , l.fulfmt_orders_unscheduled
   , m.unscheduled_daily_orders
 from store_summary a 
 left join store_bu_mapping b on a.site_nbr = b.STORE_NBR
@@ -187,3 +222,5 @@ left join uplh k on a.site_nbr = k.STORE_NBR
 left join gmv_output l on a.site_nbr = cast(l.site_id as int64)
 -- unscheduled daily orders actuals
 left join unscheduled_orders m on a.site_nbr = cast(m.site_id as int64)
+-- one demand forecast
+left join one_demand_fcst n on a.site_nbr = n.StoreId
