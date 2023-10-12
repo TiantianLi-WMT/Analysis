@@ -15,6 +15,9 @@ select distinct
   , BANNER_DESC
   , BUO_AREA_MGR_NM
   , SUBDIV_MGR_NM
+  , ST_ADDR_LINE_1
+  , LATITUDE_DGR
+  , LONGITUDE_DGR
 from wmt-everest.mfc_data.store_bu_mapping
 )
 
@@ -157,24 +160,30 @@ select
   , b.STATE
   , b.BANNER_DESC
   , b.SUBDIV_MGR_NM
+  , b.ST_ADDR_LINE_1
+  , b.LATITUDE_DGR
+  , b.LONGITUDE_DGR
   , c.num_of_stores
   , c.num_of_SUP
   , d.MPC current_mpc
   , e.Type
   , e.Current_Soln
   , f.Pick_up_2_0_3_0_Capacity  -- as a reference for now
-  -- , g.Programs___Initiatives MFC_Submission_Type
-  -- , case 
-  --     when g.Programs___Initiatives = 'Manual MFCs' then 1100 
-  --     when g.Programs___Initiatives = 'Auto MFC' then 1500 
-  --     else null end MFC_capacity
-  -- , right(left(Sub_Initiatives, 4),2) MFC_Submission_FY
-  -- , g.Project_Owner
-  -- , g.Go_Live MFC_Submission_GoLive
-  -- MFC Capacity
-  , right(cast(h.PY as string), 2) MFC_Approved_PY
-  , case when MFC_Project_Kickoff = 'MMFC' then 1100 else 1300 end MFC_MPC
-  , case when MFC_Project_Kickoff = 'MMFC' then 'MMFC' else 'Gen1_AMFC' end MFC_Type
+  -- MFC Capacity - Approved
+  , case when h.Ceremony_Actual = 'TBD' then 26 else cast(right(h.Ceremony_Actual,2) as int64)+1 end MFC_PY_Approved
+  , case when h.Ceremony_Actual is not null then 1100 else null end MFC_MPC_Approved   --- assume all MMFC with 1100 MPC
+  , case when h.Ceremony_Actual is not null then 'MMFC' else null end MFC_Type_Approved
+  -- MFC Capacity - AOP Submission
+  , right(left(Sub_Initiatives, 4),2) MFC_FY_AOP
+  , case 
+      when g.Programs___Initiatives = 'Manual MFCs' then 1100 
+      when g.Programs___Initiatives = 'Auto MFC' then 1300   -- assumes Gen1 AMFC
+      else null end MFC_MPC_AOP
+  , g.Programs___Initiatives MFC_Type_AOP
+  , case 
+      when g.store in (4358,1129,1504,4436,5348,937,2595,3348,4405,4285,3783) then 'Reassess'
+      when g.store in (1090,1219,3710,2783,451) then 'Fast Follow'
+      else null end MFC_Notes_AOP
   -- PU2.0 Remodel
   , coalesce(i.Possession, i.GO_Date) Remodel_Date
   , i.Project_Type
@@ -183,7 +192,7 @@ select
   , cast(replace(j.FY24,'-','0') as int64) FY24_UB
   , cast(replace(j.FY25,'-','0') as int64) FY25_UB
   , cast(replace(j.FY26,'-','0') as int64) FY26_UB
-  , cast(replace(j.FY27 ,'-','0') as int64)FY27_UB
+  , cast(replace(j.FY27,'-','0') as int64) FY27_UB
   , cast(replace(j.FY28,'-','0') as int64) FY28_UB
   , cast(replace(j.FY29,'-','0') as int64) FY29_UB
   , cast(replace(j.FY30,'-','0') as int64) FY30_UB
