@@ -1,0 +1,137 @@
+
+create or replace table wmt-everest.mfc_data.top_market_analysis_store_level_summary as 
+
+with store_level_summary as (
+select
+  SUBDIV_NM
+  , market_id
+  , list_of_stores
+  , num_of_stores
+  , num_of_SUP
+  , cbsa
+  , site_nbr
+  , Type
+  , Current_Soln
+  -- historical performance
+  , avg_UPLH
+  , GMV_scheduled
+  , GMV_unscheduled
+  , order_basket_scheduled
+  , order_basket_unscheduled
+  , order_size_scheduled
+  , order_size_unscheduled
+  , unscheduled_daily_orders
+  -- Current Capacity
+  , current_mpc
+  -- PU2.0 Remodel
+  , Remodel_Date
+  , Remodel_MPC Remodel_MPC_raw
+  , coalesce(Remodel_MPC, current_mpc) Remodel_MPC
+  -- MFC
+  , MFC_PY_Approved
+  , MFC_MPC_Approved
+  , MFC_Type_Approved
+  , MFC_FY_AOP
+  , MFC_MPC_AOP
+  , MFC_Type_AOP
+  , MFC_Notes_AOP
+  -- upper bound rebaseline fcst
+  , FY24_UB
+  , FY25_UB
+  , FY26_UB
+  , FY27_UB
+  , FY28_UB
+  , FY29_UB
+  , FY30_UB
+  , FY31_UB
+  , FY32_UB
+  , FY33_UB
+  , FY34_UB
+  -- one demand fcst
+  , FY24_OD
+  , FY25_OD
+  , FY26_OD
+  -- capacity
+  , current_mpc FY24_Cap
+  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 25 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY25_Cap
+  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 26 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY26_Cap
+  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 27 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY27_Cap
+  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 28 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY28_Cap
+  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 29 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY29_Cap
+  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 30 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY30_Cap
+  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 31 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY31_Cap
+  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 32 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY32_Cap
+  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 33 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY33_Cap
+  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 34 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY34_Cap
+from  wmt-everest.mfc_data.top_market_analysis_base_query
+where 1=1
+  and SUBDIV_NM is not null -- excluding 7 stores
+  -- and market_id = 1655
+  -- and site_nbr = 1588
+  -- and market_id = 1451
+  -- and MFC_PY_Approved is not null
+  -- and SUBDIV_NM = 'EAST BU'
+)
+
+, store_level_summary_calc as (
+select 
+  *
+  -- store utiilzation
+  , round(safe_divide(FY24_UB, current_mpc),2) FY24_Util
+  , round(safe_divide(FY25_UB, FY25_Cap),2) FY25_Util
+  , round(safe_divide(FY26_UB, FY26_Cap),2) FY26_Util
+  , round(safe_divide(FY27_UB, FY27_Cap),2) FY27_Util
+  , round(safe_divide(FY28_UB, FY28_Cap),2) FY28_Util
+  , round(safe_divide(FY29_UB, FY29_Cap),2) FY29_Util
+  , round(safe_divide(FY30_UB, FY30_Cap),2) FY30_Util
+  , round(safe_divide(FY31_UB, FY31_Cap),2) FY31_Util
+  , round(safe_divide(FY32_UB, FY32_Cap),2) FY32_Util
+  , round(safe_divide(FY33_UB, FY33_Cap),2) FY33_Util
+  , round(safe_divide(FY34_UB, FY34_Cap),2) FY34_Util
+  -- demand percentile
+  , percent_rank() over (order by FY24_UB) FY24_UB_percentile
+  , percent_rank() over (order by FY29_UB) FY29_UB_percentile
+from store_level_summary
+)
+
+, store_level_summary_output as (
+select
+  *
+  , case 
+      when FY24_UB >= 1100 then '0%-10%'
+      when FY24_UB_percentile >= .8 then '10%-20%'
+      when FY24_UB_percentile >= .7 then '20%-30%'
+      when FY24_UB_percentile >= .6 then '30%-40%'
+      when FY24_UB >= 270 then '40%-50%'
+      when FY24_UB_percentile >= .4 then '50%-60%'
+      when FY24_UB_percentile >= .3 then '60%-70%'
+      when FY24_UB_percentile >= .2 then '70%-80%'
+      when FY24_UB_percentile >= .1 then '80%-90%'
+      when FY24_UB_percentile >= 0 then '90%-100%'
+    else null end FY24_UB_percentile_bucket
+  , case 
+      when FY29_UB >= 2500 then '0%-10%'
+      when FY29_UB_percentile >= .8 then '10%-20%'
+      when FY29_UB_percentile >= .7 then '20%-30%'
+      when FY29_UB_percentile >= .6 then '30%-40%'
+      when FY29_UB >= 500 then '40%-50%'
+      when FY29_UB_percentile >= .4 then '50%-60%'
+      when FY29_UB_percentile >= .3 then '60%-70%'
+      when FY29_UB_percentile >= .2 then '70%-80%'
+      when FY29_UB_percentile >= .1 then '80%-90%'
+      when FY29_UB_percentile >= 0 then '90%-100%'
+    else null end FY29_UB_percentile_bucket
+  , case when FY26_Util > .7 then '> 70%' else '<= 70%' end FY26_Util_Criteria
+from store_level_summary_calc
+)
+
+select * from store_level_summary_output
+
+
+
+
+
+
+
+
+
