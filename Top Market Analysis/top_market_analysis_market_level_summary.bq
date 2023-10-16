@@ -50,17 +50,29 @@ select
   , FY26_OD
   -- capacity
   , current_mpc FY24_Cap
+  -- PU2.0 only MPC
+  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2025 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY25_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2026 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY26_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2027 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY27_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2028 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY28_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2029 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY29_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2030 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY30_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2031 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY31_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2032 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY32_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2033 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY33_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2034 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY34_Cap
+
   -- MFC Approved and Live Capacity
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2025 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY25_Cap
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2026 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY26_Cap
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2027 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY27_Cap
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2028 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY28_Cap
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2029 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY29_Cap
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2030 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY30_Cap
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2031 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY31_Cap
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2032 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY32_Cap
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2033 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY33_Cap
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2034 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY34_Cap
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2025 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY25_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2026 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY26_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2027 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY27_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2028 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY28_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2029 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY29_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2030 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY30_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2031 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY31_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2032 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY32_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2033 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY33_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2034 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY34_Cap_mfc
   -- MFC Full Roadmap 
   , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2025 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY25_Cap_full
   , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2026 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY26_Cap_full
@@ -75,18 +87,12 @@ select
 
 from  wmt-everest.mfc_data.top_market_analysis_base_query
 where 1=1
-  and SUBDIV_NM is not null -- excluding 7 stores
-  -- and market_id = 1655
-  -- and site_nbr = 1588
-  -- and market_id = 1451
-  -- and MFC_PY_Approved is not null
-  -- and SUBDIV_NM = 'EAST BU'
+  -- and SUBDIV_NM is not null -- excluding 7 stores
 )
 
 , market_level_summary as (
 select 
   market_id
-  , SUBDIV_NM
   , list_of_stores
   , num_of_stores
   , num_of_SUP
@@ -162,7 +168,7 @@ select
   , percent_rank() over (order by sum(FY24_UB)) FY24_UB_percentile
   , percent_rank() over (order by sum(FY29_UB)) FY29_UB_percentile
 from store_level_summary
-group by 1,2,3,4,5,6
+group by 1,2,3,4,5
 )
 
 , market_level_output as (
@@ -200,8 +206,15 @@ from market_level_summary
 -- group by 1 having count(market_id) > 1
 
 -- duplicate markets due to stores assigned to different BU wihin a market, solution: choose the BU with max store sale for that market
+, find_BU as (
 select 
-  * 
-  , rank() over(partition by market_id order by FY24_UB desc) as ranknum
-from market_level_output
+  market_id
+  , SUBDIV_NM
+  , rank() over(partition by market_id order by sum(FY24_UB) desc) as ranknum
+from store_level_summary
+group by 1,2
 qualify ranknum = 1
+)
+
+select a.*, b.SUBDIV_NM from market_level_output a 
+left join find_BU b on a.market_id = b.market_id
