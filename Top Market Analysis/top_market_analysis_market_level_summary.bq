@@ -1,3 +1,4 @@
+
 create or replace table wmt-everest.mfc_data.top_market_analysis_market_level_summary as 
 
 with store_level_summary as (
@@ -27,13 +28,10 @@ select
   , Remodel_MPC Remodel_MPC_raw
   , coalesce(Remodel_MPC, current_mpc) Remodel_MPC
   -- MFC
-  , MFC_PY_Approved
+  , MFC_FY_Approved
   , MFC_MPC_Approved
-  , MFC_Type_Approved
-  , MFC_FY_AOP
-  , MFC_MPC_AOP
-  , MFC_Type_AOP
-  , MFC_Notes_AOP
+  , MFC_FY_Approved_and_Roadmap
+  , MFC_MPC_Approved_and_Roadmap
   -- upper bound rebaseline fcst
   , FY24_UB
   , FY25_UB
@@ -52,16 +50,29 @@ select
   , FY26_OD
   -- capacity
   , current_mpc FY24_Cap
-  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 25 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY25_Cap
-  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 26 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY26_Cap
-  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 27 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY27_Cap
-  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 28 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY28_Cap
-  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 29 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY29_Cap
-  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 30 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY30_Cap
-  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 31 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY31_Cap
-  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 32 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY32_Cap
-  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 33 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY33_Cap
-  , case when MFC_PY_Approved is null or cast(MFC_PY_Approved as int64) > 34 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY34_Cap
+  -- MFC Approved and Live Capacity
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2025 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY25_Cap
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2026 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY26_Cap
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2027 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY27_Cap
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2028 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY28_Cap
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2029 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY29_Cap
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2030 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY30_Cap
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2031 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY31_Cap
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2032 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY32_Cap
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2033 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY33_Cap
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2034 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY34_Cap
+  -- MFC Full Roadmap 
+  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2025 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY25_Cap_full
+  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2026 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY26_Cap_full
+  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2027 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY27_Cap_full
+  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2028 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY28_Cap_full
+  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2029 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY29_Cap_full
+  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2030 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY30_Cap_full
+  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2031 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY31_Cap_full
+  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2032 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY32_Cap_full
+  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2033 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY33_Cap_full
+  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2034 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY34_Cap_full
+
 from  wmt-everest.mfc_data.top_market_analysis_base_query
 where 1=1
   and SUBDIV_NM is not null -- excluding 7 stores
@@ -113,6 +124,17 @@ select
   , sum(FY32_Cap) FY32_Cap
   , sum(FY33_Cap) FY33_Cap
   , sum(FY34_Cap) FY34_Cap
+    -- capacity MFC full
+  , sum(FY25_Cap_full) FY25_Cap_full
+  , sum(FY26_Cap_full) FY26_Cap_full
+  , sum(FY27_Cap_full) FY27_Cap_full
+  , sum(FY28_Cap_full) FY28_Cap_full
+  , sum(FY29_Cap_full) FY29_Cap_full
+  , sum(FY30_Cap_full) FY30_Cap_full
+  , sum(FY31_Cap_full) FY31_Cap_full
+  , sum(FY32_Cap_full) FY32_Cap_full
+  , sum(FY33_Cap_full) FY33_Cap_full
+  , sum(FY34_Cap_full) FY34_Cap_full
   -- market utiilzation
   , round(safe_divide(sum(FY24_UB), sum(current_mpc)),2) FY24_Util
   , round(safe_divide(sum(FY25_UB), sum(FY25_Cap)),2) FY25_Util
@@ -125,6 +147,17 @@ select
   , round(safe_divide(sum(FY32_UB), sum(FY32_Cap)),2) FY32_Util
   , round(safe_divide(sum(FY33_UB), sum(FY33_Cap)),2) FY33_Util
   , round(safe_divide(sum(FY34_UB), sum(FY34_Cap)),2) FY34_Util
+  -- market utiilzation full
+  , round(safe_divide(sum(FY25_UB), sum(FY25_Cap_full)),2) FY25_Util_full
+  , round(safe_divide(sum(FY26_UB), sum(FY26_Cap_full)),2) FY26_Util_full
+  , round(safe_divide(sum(FY27_UB), sum(FY27_Cap_full)),2) FY27_Util_full
+  , round(safe_divide(sum(FY28_UB), sum(FY28_Cap_full)),2) FY28_Util_full
+  , round(safe_divide(sum(FY29_UB), sum(FY29_Cap_full)),2) FY29_Util_full
+  , round(safe_divide(sum(FY30_UB), sum(FY30_Cap_full)),2) FY30_Util_full
+  , round(safe_divide(sum(FY31_UB), sum(FY31_Cap_full)),2) FY31_Util_full
+  , round(safe_divide(sum(FY32_UB), sum(FY32_Cap_full)),2) FY32_Util_full
+  , round(safe_divide(sum(FY33_UB), sum(FY33_Cap_full)),2) FY33_Util_full
+  , round(safe_divide(sum(FY34_UB), sum(FY34_Cap_full)),2) FY34_Util_full
   -- demand percentile
   , percent_rank() over (order by sum(FY24_UB)) FY24_UB_percentile
   , percent_rank() over (order by sum(FY29_UB)) FY29_UB_percentile
@@ -172,11 +205,3 @@ select
   , rank() over(partition by market_id order by FY24_UB desc) as ranknum
 from market_level_output
 qualify ranknum = 1
-
-
-
-
-
-
-
-
