@@ -50,17 +50,30 @@ select
   , FY26_OD
   -- capacity
   , current_mpc FY24_Cap
-  -- PU2.0 only MPC
-  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2025 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY25_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2026 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY26_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2027 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY27_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2028 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY28_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2029 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY29_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2030 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY30_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2031 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY31_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2032 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY32_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2033 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY33_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date) > 2034 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY34_Cap
+  -- -- PU2.0 only MPC
+  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2025 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY25_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2026 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY26_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2027 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY27_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2028 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY28_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2029 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY29_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2030 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY30_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2031 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY31_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2032 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY32_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2033 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY33_Cap
+  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2034 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY34_Cap
+-- test
+
+  -- MFC Approved and Live Capacity
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2025 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY25_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2026 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY26_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2027 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY27_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2028 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY28_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2029 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY29_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2030 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY30_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2031 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY31_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2032 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY32_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2033 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY33_Cap_mfc
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2034 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY34_Cap_mfc
 
   -- MFC Approved and Live Capacity
   , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2025 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY25_Cap_mfc
