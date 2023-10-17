@@ -1,4 +1,3 @@
-
 create or replace table wmt-everest.mfc_data.top_market_analysis_store_level_summary as 
 
 with store_level_summary as (
