@@ -1,6 +1,6 @@
 -- Purpose: Compile a Mega Base Query for Store Level Info 
 -- Author: Tiantian Li
--- Last Update: 10/17/2023
+-- Last Update: 10/16/2023
 -- Notes: see ReadMe.md for logic and inputs. 
 
 create or replace table wmt-everest.mfc_data.top_market_analysis_base_query as 
@@ -45,7 +45,7 @@ from wmt-everest.mfc_data.market_summary_us_20_25_29
 , current_demand as (
 select 
   cast(site_id as int64) site_id
-  , sum(demand_orders) / 30 as curret_demand
+  , sum(demand_orders) / 30 as current_demand
 from `wmt-everest.AUM.lmd_hist_pixel_source_demand`
 where 1=1
   and fulfmt_type in ('OG_regular_delivery','OG_regular_pickup','InHome_delivery')  --  ('OG_regular_delivery','OG_regular_pickup','OG_express_delivery','OG_express_pickup')
@@ -201,7 +201,7 @@ select
   , i.Project_Type
   , i.Project_Status
   , i.MPC Remodel_MPC
-  , o.curret_demand
+  , o.current_demand
   , cast(replace(j.FY24,'-','0') as int64) FY24_UB
   , cast(replace(j.FY25,'-','0') as int64) FY25_UB
   , cast(replace(j.FY26,'-','0') as int64) FY26_UB
@@ -250,3 +250,5 @@ left join unscheduled_orders m on a.site_nbr = cast(m.site_id as int64)
 left join one_demand_fcst n on a.site_nbr = n.StoreId
 -- current demand
 left join current_demand o on a.site_nbr = o.site_id
+
+
