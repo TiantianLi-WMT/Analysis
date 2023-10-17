@@ -120,6 +120,10 @@ select
   , percent_rank() over (order by sum(FY24_UB)) FY24_UB_percentile
   , percent_rank() over (order by sum(FY24_OD)) FY24_OD_percentile
   , percent_rank() over (order by sum(FY29_UB)) FY29_UB_percentile
+  , sum(store_current_util_greater_than_70) store_current_util_greater_than_70
+  , sum(store_FY26_Util_greater_than_70) store_FY26_Util_greater_than_70
+  , sum(store_FY26_Util_mfc_greater_than_70) store_FY26_Util_mfc_greater_than_70
+  , sum(store_FY26_Util_full_greater_than_70) store_FY26_Util_full_greater_than_70
 from  wmt-everest.mfc_data.top_market_analysis_store_level_summary
 group by 1,2,3,4,5
 )
