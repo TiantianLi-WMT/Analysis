@@ -1,6 +1,6 @@
 -- Purpose: Compile a Mega Base Query for Store Level Info 
 -- Author: Tiantian Li
--- Last Update: 10/16/2023
+-- Last Update: 10/17/2023
 -- Notes: see ReadMe.md for logic and inputs. 
 
 create or replace table wmt-everest.mfc_data.top_market_analysis_base_query as 
@@ -29,13 +29,6 @@ select
   , cbsa
   , market_id
   , list_of_stores
-  -- , ub_ogd_fy24
-  -- , ub_ogd_fy29
-  -- , ogp_fy24
-  -- , ogp_fy29
-  -- , banner
-  -- , primary_demand
-  -- , pickup_demand
 from wmt-everest.mfc_data.store_summary_us_20_25_29
 )
 
@@ -46,6 +39,20 @@ select
   , num_of_stores
   , num_of_SUP
 from wmt-everest.mfc_data.market_summary_us_20_25_29
+)
+
+-- historical performance 
+, current_demand as (
+select 
+  cast(site_id as int64) site_id
+  , sum(demand_orders) / 30 as curret_demand
+from `wmt-everest.AUM.lmd_hist_pixel_source_demand`
+where 1=1
+  and fulfmt_type in ('OG_regular_delivery','OG_regular_pickup','InHome_delivery')  --  ('OG_regular_delivery','OG_regular_pickup','OG_express_delivery','OG_express_pickup')
+  and year_id = 2023
+  and month_id = 8 
+group by 1
+order by 1
 )
 
 , uplh as (
@@ -189,15 +196,12 @@ select
   -- MFC Roadmap
   , h.MFC_MPC MFC_MPC_Approved_and_Roadmap
   , h.FY_to_reach_max_cap MFC_FY_Approved_and_Roadmap
-  -- MFC Capacity - Approved
-  -- , case when h.Ceremony_Actual = 'TBD' then 26 else cast(right(h.Ceremony_Actual,2) as int64)+1 end MFC_PY_Approved
-  -- , case when h.Ceremony_Actual is not null then 1100 else null end MFC_MPC_Approved   --- assume all MMFC with 1100 MPC
-  -- , case when h.Ceremony_Actual is not null then 'MMFC' else null end MFC_Type_Approved
   -- PU2.0 Remodel
   , coalesce(i.Possession, i.GO_Date) Remodel_Date
   , i.Project_Type
   , i.Project_Status
   , i.MPC Remodel_MPC
+  , o.curret_demand
   , cast(replace(j.FY24,'-','0') as int64) FY24_UB
   , cast(replace(j.FY25,'-','0') as int64) FY25_UB
   , cast(replace(j.FY26,'-','0') as int64) FY26_UB
@@ -236,7 +240,6 @@ left join mfc_list h on a.site_nbr = h.store -- mfc full list
 left join wmt-everest.mfc_data.store_remodel_plan i on a.site_nbr = i.Store_Number
 -- fcst
 left join wmt-everest.mfc_data.store_ub_rebaseline_fcst j on a.site_nbr = j.Store
--- current demand
 -- uplh   
 left join uplh k on a.site_nbr = k.STORE_NBR
 -- gmv
@@ -245,3 +248,5 @@ left join gmv_output l on a.site_nbr = cast(l.site_id as int64)
 left join unscheduled_orders m on a.site_nbr = cast(m.site_id as int64)
 -- one demand forecast
 left join one_demand_fcst n on a.site_nbr = n.StoreId
+-- current demand
+left join current_demand o on a.site_nbr = o.site_id
