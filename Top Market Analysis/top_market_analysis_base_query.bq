@@ -1,10 +1,11 @@
 -- Purpose: Compile a Mega Base Query for Store Level Info 
 -- Author: Tiantian Li
--- Last Update: 10/16/2023
+-- Last Update: 10/17/2023
 -- Notes: see ReadMe.md for logic and inputs. 
 
 create or replace table wmt-everest.mfc_data.top_market_analysis_base_query as 
 
+--## 1. Store, Market, and BU Attributes ##---
 with store_bu_mapping as (
 select distinct
   SUBDIV_NM
@@ -41,29 +42,24 @@ select
 from wmt-everest.mfc_data.market_summary_us_20_25_29
 )
 
--- historical performance 
-, current_demand as (
-select 
-  cast(site_id as int64) site_id
-  , sum(demand_orders) / 30 as current_demand
-from `wmt-everest.AUM.lmd_hist_pixel_source_demand`
-where 1=1
-  and fulfmt_type in ('OG_regular_delivery','OG_regular_pickup','InHome_delivery')  --  ('OG_regular_delivery','OG_regular_pickup','OG_express_delivery','OG_express_pickup')
-  and year_id = 2023
-  and month_id = 8 
-group by 1
-order by 1
-)
 
-, uplh as (
+--## 2. Current or Historical Performance ##---
+-- 2.1 Current Demand (L6W Orders per Day) for Scheduled and Unscheduled
+, orders_per_day as (
 select
-  STORE_NBR
-  , avg(UPLH) avg_UPLH
-from wmt-everest.mfc_data.UPLH_historicals
+  STORE_NUM
+  , round(count(distinct case when FULFMT_TYPE_DESC in ('SCHEDULED_DELIVERY','SCHEDULED_PICKUP','INHOME') and SPARK_SHOPPER_IND is null then SALES_ORDER_NUM else null end) / 42) Scheduled_Opd_Nonexpress_Nonspark -- picking this one for "Scheduled" in this analysis 
+  , round(count(distinct case when FULFMT_TYPE_DESC in ('SCHEDULED_DELIVERY','SCHEDULED_PICKUP','INHOME') and SPARK_SHOPPER_IND = 1 then SALES_ORDER_NUM else null end) / 42) Scheduled_Opd_Nonexpress_Spark
+  , round(count(distinct case when FULFMT_TYPE_DESC in ('EXPRESS_DELIVERY','EXPRESS_PICKUP') then SALES_ORDER_NUM else null end) /42) Scheduled_Opd_Express
+  , round(count(distinct case when FULFMT_TYPE_DESC in ('UNSCHEDULED_DELIVERY','UNSCHEDULED_PICKUP') then SALES_ORDER_NUM else null end) / 42) Unscheduled_Opd -- picking this one for "Unscheduled" in this analysis 
+  , round(count(distinct case when FULFMT_TYPE_DESC in ('DELIVERY','PICKUP') then SALES_ORDER_NUM else null end) / 42) Other_Opd
+  , round(count(distinct SALES_ORDER_NUM) / 42) Total_Opd -- number may not match sum of previous columns due to rounding
+from `wmt-edw-prod.WW_MB_DL_VM.STORE_FULFMT_ORDER_ITEM_360` a
 where 1=1
-  and WM_YR_WK_NBR between 202324 and 202335
-  and UPLH != 0
+  and ORDER_STATUS_DESC = 'SHIPPED' -- completed orders only
+  and RPT_DT between date_sub(date_trunc(current_date(), week(sunday)), interval 6 week) and date_trunc(current_date(), week(sunday))-1  -- past 6 weeks, Sun to Sat
 group by 1
+order by 1 asc
 )
 
 -- Order basket and size for Scheduled and Unscheduled
@@ -115,28 +111,19 @@ left join unscheduled_orders_gmv b on a.site_id = b.site_id
 )
 
 
--- unscheduled daily orders actuals (past 3 months)
-, unscheduled_orders_prep as (
-select 
-  site_id
-  , month_id
-  , year_id
-  , sum(demand_orders) / 31 daily_avg_demand
-from `wmt-everest.AUM.lmd_hist_pixel_source_demand` 
-where 1=1 
-  and fulfmt_type in ('FC_sort', 'DFS', 'SFS')
-  and year_id = 2023 
-  and month_id in (7,8,9)
-group by 1,2,3
-)
-
-, unscheduled_orders as (
+, uplh as (
 select
-  site_id
-  , avg(daily_avg_demand) unscheduled_daily_orders
-from unscheduled_orders_prep
+  STORE_NBR
+  , avg(UPLH) avg_UPLH
+from wmt-everest.mfc_data.UPLH_historicals
+where 1=1
+  and WM_YR_WK_NBR between 202324 and 202335
+  and UPLH != 0
 group by 1
 )
+
+
+--## 3. Demand Forecast ##--
 
 -- one demand forecast
 , one_demand_fcst_prep as (
@@ -159,6 +146,8 @@ pivot
   FOR cast(FY as int64) in (2024,2025,2026)
 )
 )
+
+--## 4.Capacity Inputs ##--
 
 , mfc_list as ( -- 444 mfc list, 44 of them approved, 4 of them live
 select
@@ -201,7 +190,7 @@ select
   , i.Project_Type
   , i.Project_Status
   , i.MPC Remodel_MPC
-  , o.current_demand
+  , o.Scheduled_Opd_Nonexpress_Nonspark current_demand
   , cast(replace(j.FY24,'-','0') as int64) FY24_UB
   , cast(replace(j.FY25,'-','0') as int64) FY25_UB
   , cast(replace(j.FY26,'-','0') as int64) FY26_UB
@@ -225,7 +214,8 @@ select
   , l.order_size_unscheduled
   , l.GMV_unscheduled
   , l.fulfmt_orders_unscheduled
-  , m.unscheduled_daily_orders
+  , o.Unscheduled_Opd unscheduled_daily_orders
+  -- , m.unscheduled_daily_orders
 from store_summary a 
 left join store_bu_mapping b on a.site_nbr = b.STORE_NBR
 left join market_summary c on a.market_id = c.market_id
@@ -235,20 +225,54 @@ left join (select distinct Store, Pick_up_2_0_3_0_Capacity from wmt-everest.mfc_
 -- MFC
 left join (select * from mfc_list where Status in ('Approved', 'Live')) g on a.site_nbr = g.store  -- mfc approved list
 left join mfc_list h on a.site_nbr = h.store -- mfc full list
--- left join wmt-everest.mfc_data.mfc_aop_submission g on a.site_nbr = g.store
--- left join wmt-everest.mfc_data.approved_new_stores h on a.site_nbr = h.Str__
 left join wmt-everest.mfc_data.store_remodel_plan i on a.site_nbr = i.Store_Number
--- fcst
-left join wmt-everest.mfc_data.store_ub_rebaseline_fcst j on a.site_nbr = j.Store
--- uplh   
+-- FCST
+left join wmt-everest.mfc_data.store_ub_rebaseline_fcst j on a.site_nbr = j.Store -- upper bound fcst
+left join one_demand_fcst n on a.site_nbr = n.StoreId -- one demand forecast
+-- UPLH   
 left join uplh k on a.site_nbr = k.STORE_NBR
--- gmv
+-- GMV
 left join gmv_output l on a.site_nbr = cast(l.site_id as int64)
--- unscheduled daily orders actuals
-left join unscheduled_orders m on a.site_nbr = cast(m.site_id as int64)
--- one demand forecast
-left join one_demand_fcst n on a.site_nbr = n.StoreId
--- current demand
-left join current_demand o on a.site_nbr = o.site_id
+-- Current demand & unscheduled daily orders actuals
+left join orders_per_day o on a.site_nbr = o.STORE_NUM
+-- left join current_demand o on a.site_nbr = o.site_id
+-- left join unscheduled_orders m on a.site_nbr = cast(m.site_id as int64)
 
+---------------------------------------------
+--## Appendix: other code templates
+ 
+-- , current_demand as (
+-- select 
+--   cast(site_id as int64) site_id
+--   , sum(demand_orders) / 30 as current_demand
+-- from `wmt-everest.AUM.lmd_hist_pixel_source_demand`
+-- where 1=1
+--   and fulfmt_type in ('OG_regular_delivery','OG_regular_pickup','InHome_delivery')  --  ('OG_regular_delivery','OG_regular_pickup','OG_express_delivery','OG_express_pickup')
+--   and year_id = 2023
+--   and month_id = 8 
+-- group by 1
+-- order by 1
+-- )
 
+-- unscheduled daily orders actuals (past 3 months)
+-- , unscheduled_orders_prep as (
+-- select 
+--   site_id
+--   , month_id
+--   , year_id
+--   , sum(demand_orders) / 31 daily_avg_demand
+-- from `wmt-everest.AUM.lmd_hist_pixel_source_demand` 
+-- where 1=1 
+--   and fulfmt_type in ('FC_sort', 'DFS', 'SFS')
+--   and year_id = 2023 
+--   and month_id in (7,8,9)
+-- group by 1,2,3
+-- )
+
+-- , unscheduled_orders as (
+-- select
+--   site_id
+--   , avg(daily_avg_demand) unscheduled_daily_orders
+-- from unscheduled_orders_prep
+-- group by 1
+-- )
