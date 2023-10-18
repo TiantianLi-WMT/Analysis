@@ -1,157 +1,138 @@
-create or replace table wmt-everest.mfc_data.top_market_analysis_store_level_summary as 
+create or replace table wmt-everest.mfc_data.top_market_analysis_market_level_summary as 
 
-with store_level_summary as (
-select
-  SUBDIV_NM
-  , market_id
+with market_level_summary as (
+select 
+  market_id
   , list_of_stores
   , num_of_stores
   , num_of_SUP
   , cbsa
-  , site_nbr
-  , Type
-  , Current_Soln
-  --## Historicals/Actuals ##-- 
-  , avg_UPLH
-  , GMV_scheduled
-  , GMV_unscheduled
-  , order_basket_scheduled
-  , order_basket_unscheduled
-  , order_size_scheduled
-  , order_size_unscheduled
-  , unscheduled_daily_orders
-  --## Capacity ##--
-  -- PU2.0 Remodel
-  , Remodel_Date
-  , Remodel_MPC Remodel_MPC_raw
-  , coalesce(Remodel_MPC, current_mpc) Remodel_MPC
-  -- MFC Approved & Live (48 stores)
-  , MFC_FY_Approved
-  , MFC_MPC_Approved
-  -- MFC Roadmap (444 stores)
-  , MFC_FY_Approved_and_Roadmap
-  , MFC_MPC_Approved_and_Roadmap
-  --## Demand ##--
-  -- current
-  , current_demand
-  -- upper bound rebaseline fcst
-  , FY24_UB
-  , FY25_UB
-  , FY26_UB
-  , FY27_UB
-  , FY28_UB
-  , FY29_UB
-  , FY30_UB
-  , FY31_UB
-  , FY32_UB
-  , FY33_UB
-  , FY34_UB
+  -- historical performance
+  , avg(avg_UPLH) avg_UPLH
+  , sum(GMV_scheduled) GMV_scheduled
+  , sum(GMV_unscheduled) GMV_unscheduled
+  , sum(unscheduled_daily_orders) unscheduled_daily_orders
+  --## demand ##--
+  -- current 
+  , sum(current_demand) current_demand
+  -- upper bound fcst
+  , sum(FY24_UB) FY24_UB
+  , sum(FY25_UB) FY25_UB
+  , sum(FY26_UB) FY26_UB
+  , sum(FY27_UB) FY27_UB
+  , sum(FY28_UB) FY28_UB
+  , sum(FY29_UB) FY29_UB
+  , sum(FY30_UB) FY30_UB
+  , sum(FY31_UB) FY31_UB
+  , sum(FY32_UB) FY32_UB
+  , sum(FY33_UB) FY33_UB
+  , sum(FY34_UB) FY34_UB
   -- one demand fcst
-  , FY24_OD
-  , FY25_OD
-  , FY26_OD
-  --## Capacity by FY ##--
-  -- Scenario 1: Current (as FY24 and static for all years if no upgrade)
-  , current_mpc FY24_Cap
-  -- Scenario 2: PU2.0 only MPC
-  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2025 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY25_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2026 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY26_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2027 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY27_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2028 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY28_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2029 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY29_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2030 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY30_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2031 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY31_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2032 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY32_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2033 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY33_Cap
-  , case when Remodel_Date is null or extract(year from Remodel_Date)+1 > 2034 then current_mpc else coalesce(Remodel_MPC, current_mpc) end FY34_Cap
+  , sum(FY24_OD) FY24_OD
+  , sum(FY25_OD) FY25_OD
+  , sum(FY26_OD) FY26_OD
+  -- capacity
+  , sum(FY24_Cap) FY24_Cap
+    -- Scenario 2: PU2.0 only MPC
+  , sum(FY25_Cap) FY25_Cap
+  , sum(FY26_Cap) FY26_Cap
+  , sum(FY27_Cap) FY27_Cap
+  , sum(FY28_Cap) FY28_Cap
+  , sum(FY29_Cap) FY29_Cap
+  , sum(FY30_Cap) FY30_Cap
+  , sum(FY31_Cap) FY31_Cap
+  , sum(FY32_Cap) FY32_Cap
+  , sum(FY33_Cap) FY33_Cap
+  , sum(FY34_Cap) FY34_Cap
   -- Scenario 3: MFC Approved and Live Capacity
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2025 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY25_Cap_mfc
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2026 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY26_Cap_mfc
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2027 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY27_Cap_mfc
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2028 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY28_Cap_mfc
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2029 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY29_Cap_mfc
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2030 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY30_Cap_mfc
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2031 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY31_Cap_mfc
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2032 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY32_Cap_mfc
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2033 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY33_Cap_mfc
-  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2034 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY34_Cap_mfc
+  , sum(FY25_Cap_mfc) FY25_Cap_mfc
+  , sum(FY26_Cap_mfc) FY26_Cap_mfc
+  , sum(FY27_Cap_mfc) FY27_Cap_mfc
+  , sum(FY28_Cap_mfc) FY28_Cap_mfc
+  , sum(FY29_Cap_mfc) FY29_Cap_mfc
+  , sum(FY30_Cap_mfc) FY30_Cap_mfc
+  , sum(FY31_Cap_mfc) FY31_Cap_mfc
+  , sum(FY32_Cap_mfc) FY32_Cap_mfc
+  , sum(FY33_Cap_mfc) FY33_Cap_mfc
+  , sum(FY34_Cap_mfc) FY34_Cap_mfc
   -- Scenario 4: MFC Full Roadmap 
-  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2025 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY25_Cap_full
-  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2026 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY26_Cap_full
-  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2027 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY27_Cap_full
-  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2028 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY28_Cap_full
-  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2029 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY29_Cap_full
-  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2030 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY30_Cap_full
-  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2031 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY31_Cap_full
-  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2032 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY32_Cap_full
-  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2033 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY33_Cap_full
-  , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2034 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY34_Cap_full
-from  wmt-everest.mfc_data.top_market_analysis_base_query
-where 1=1
-  -- and SUBDIV_NM is not null -- excluding 7 stores
-)
-
-, store_level_summary_calc as (
-select 
-  *
+  , sum(FY25_Cap_full) FY25_Cap_full
+  , sum(FY26_Cap_full) FY26_Cap_full
+  , sum(FY27_Cap_full) FY27_Cap_full
+  , sum(FY28_Cap_full) FY28_Cap_full
+  , sum(FY29_Cap_full) FY29_Cap_full
+  , sum(FY30_Cap_full) FY30_Cap_full
+  , sum(FY31_Cap_full) FY31_Cap_full
+  , sum(FY32_Cap_full) FY32_Cap_full
+  , sum(FY33_Cap_full) FY33_Cap_full
+  , sum(FY34_Cap_full) FY34_Cap_full
+  --#3 Market Utiilzation  ##--
   -- Current Utilization
-  , round(safe_divide(current_demand, FY24_Cap),2) Current_Util -- current demand
-  , round(safe_divide(FY24_UB, FY24_Cap),2) FY24_Util -- upper bound fcst
-  , round(safe_divide(FY24_OD, FY24_Cap),2) FY24_Util_OD -- one demand fcst  
+  , round(safe_divide(sum(current_demand), sum(FY24_Cap)),2) Current_Util -- current demand
+  , round(safe_divide(sum(FY24_UB), sum(FY24_Cap)),2) FY24_Util -- upper bound fcst
+  , round(safe_divide(sum(FY24_OD), sum(FY24_Cap)),2) FY24_Util_OD -- one demand fcst  
   -- Scenario 2: Utiilzation w/ Planned PU2.0 Remodel only
   -- one demand fcst
-  , round(safe_divide(FY25_OD, FY25_Cap),2) FY25_Util_OD
-  , round(safe_divide(FY26_OD, FY26_Cap),2) FY26_Util_OD
+  , round(safe_divide(sum(FY25_OD), sum(FY25_Cap)),2) FY25_Util_OD
+  , round(safe_divide(sum(FY26_OD), sum(FY26_Cap)),2) FY26_Util_OD
   -- upper bound fcst
-  , round(safe_divide(FY25_UB, FY25_Cap),2) FY25_Util
-  , round(safe_divide(FY26_UB, FY26_Cap),2) FY26_Util
-  , round(safe_divide(FY27_UB, FY27_Cap),2) FY27_Util
-  , round(safe_divide(FY28_UB, FY28_Cap),2) FY28_Util
-  , round(safe_divide(FY29_UB, FY29_Cap),2) FY29_Util
-  , round(safe_divide(FY30_UB, FY30_Cap),2) FY30_Util
-  , round(safe_divide(FY31_UB, FY31_Cap),2) FY31_Util
-  , round(safe_divide(FY32_UB, FY32_Cap),2) FY32_Util
-  , round(safe_divide(FY33_UB, FY33_Cap),2) FY33_Util
-  , round(safe_divide(FY34_UB, FY34_Cap),2) FY34_Util
+  , round(safe_divide(sum(FY25_UB), sum(FY25_Cap)),2) FY25_Util
+  , round(safe_divide(sum(FY26_UB), sum(FY26_Cap)),2) FY26_Util
+  , round(safe_divide(sum(FY27_UB), sum(FY27_Cap)),2) FY27_Util
+  , round(safe_divide(sum(FY28_UB), sum(FY28_Cap)),2) FY28_Util
+  , round(safe_divide(sum(FY29_UB), sum(FY29_Cap)),2) FY29_Util
+  , round(safe_divide(sum(FY30_UB), sum(FY30_Cap)),2) FY30_Util
+  , round(safe_divide(sum(FY31_UB), sum(FY31_Cap)),2) FY31_Util
+  , round(safe_divide(sum(FY32_UB), sum(FY32_Cap)),2) FY32_Util
+  , round(safe_divide(sum(FY33_UB), sum(FY33_Cap)),2) FY33_Util
+  , round(safe_divide(sum(FY34_UB), sum(FY34_Cap)),2) FY34_Util
   -- Scenario 3: Utilization w/ Planned PU2.0 Remodel and MFC Approved & Live
   -- one demand fcst
-  , round(safe_divide(FY25_OD, FY25_Cap_mfc),2) FY25_Util_OD_mfc
-  , round(safe_divide(FY26_OD, FY26_Cap_mfc),2) FY26_Util_OD_mfc
+  , round(safe_divide(sum(FY25_OD), sum(FY25_Cap_mfc)),2) FY25_Util_OD_mfc
+  , round(safe_divide(sum(FY26_OD), sum(FY26_Cap_mfc)),2) FY26_Util_OD_mfc
   -- upper bound fcst
-  , round(safe_divide(FY25_UB, FY25_Cap_mfc),2) FY25_Util_mfc
-  , round(safe_divide(FY26_UB, FY26_Cap_mfc),2) FY26_Util_mfc
-  , round(safe_divide(FY27_UB, FY27_Cap_mfc),2) FY27_Util_mfc
-  , round(safe_divide(FY28_UB, FY28_Cap_mfc),2) FY28_Util_mfc
-  , round(safe_divide(FY29_UB, FY29_Cap_mfc),2) FY29_Util_mfc
-  , round(safe_divide(FY30_UB, FY30_Cap_mfc),2) FY30_Util_mfc
-  , round(safe_divide(FY31_UB, FY31_Cap_mfc),2) FY31_Util_mfc
-  , round(safe_divide(FY32_UB, FY32_Cap_mfc),2) FY32_Util_mfc
-  , round(safe_divide(FY33_UB, FY33_Cap_mfc),2) FY33_Util_mfc
-  , round(safe_divide(FY34_UB, FY34_Cap_mfc),2) FY34_Util_mfc
+  , round(safe_divide(sum(FY25_UB), sum(FY25_Cap_mfc)),2) FY25_Util_mfc
+  , round(safe_divide(sum(FY26_UB), sum(FY26_Cap_mfc)),2) FY26_Util_mfc
+  , round(safe_divide(sum(FY27_UB), sum(FY27_Cap_mfc)),2) FY27_Util_mfc
+  , round(safe_divide(sum(FY28_UB), sum(FY28_Cap_mfc)),2) FY28_Util_mfc
+  , round(safe_divide(sum(FY29_UB), sum(FY29_Cap_mfc)),2) FY29_Util_mfc
+  , round(safe_divide(sum(FY30_UB), sum(FY30_Cap_mfc)),2) FY30_Util_mfc
+  , round(safe_divide(sum(FY31_UB), sum(FY31_Cap_mfc)),2) FY31_Util_mfc
+  , round(safe_divide(sum(FY32_UB), sum(FY32_Cap_mfc)),2) FY32_Util_mfc
+  , round(safe_divide(sum(FY33_UB), sum(FY33_Cap_mfc)),2) FY33_Util_mfc
+  , round(safe_divide(sum(FY34_UB), sum(FY34_Cap_mfc)),2) FY34_Util_mfc
   -- Scenario 4: Utilization w/ Planned PU2.0 Remodel and MFC Roadmap Full list
-  -- one demand fcst
-  , round(safe_divide(FY25_OD, FY25_Cap_full),2) FY25_Util_OD_full
-  , round(safe_divide(FY26_OD, FY26_Cap_full),2) FY26_Util_OD_full
+  , round(safe_divide(sum(FY25_OD), sum(FY25_Cap_full)),2) FY25_Util_OD_full
+  , round(safe_divide(sum(FY26_OD), sum(FY26_Cap_full)),2) FY26_Util_OD_full
   -- upper bound fcst
-  , round(safe_divide(FY25_UB, FY25_Cap_full),2) FY25_Util_full
-  , round(safe_divide(FY26_UB, FY26_Cap_full),2) FY26_Util_full
-  , round(safe_divide(FY27_UB, FY27_Cap_full),2) FY27_Util_full
-  , round(safe_divide(FY28_UB, FY28_Cap_full),2) FY28_Util_full
-  , round(safe_divide(FY29_UB, FY29_Cap_full),2) FY29_Util_full
-  , round(safe_divide(FY30_UB, FY30_Cap_full),2) FY30_Util_full
-  , round(safe_divide(FY31_UB, FY31_Cap_full),2) FY31_Util_full
-  , round(safe_divide(FY32_UB, FY32_Cap_full),2) FY32_Util_full
-  , round(safe_divide(FY33_UB, FY33_Cap_full),2) FY33_Util_full
-  , round(safe_divide(FY34_UB, FY34_Cap_full),2) FY34_Util_full
+  , round(safe_divide(sum(FY25_UB), sum(FY25_Cap_full)),2) FY25_Util_full
+  , round(safe_divide(sum(FY26_UB), sum(FY26_Cap_full)),2) FY26_Util_full
+  , round(safe_divide(sum(FY27_UB), sum(FY27_Cap_full)),2) FY27_Util_full
+  , round(safe_divide(sum(FY28_UB), sum(FY28_Cap_full)),2) FY28_Util_full
+  , round(safe_divide(sum(FY29_UB), sum(FY29_Cap_full)),2) FY29_Util_full
+  , round(safe_divide(sum(FY30_UB), sum(FY30_Cap_full)),2) FY30_Util_full
+  , round(safe_divide(sum(FY31_UB), sum(FY31_Cap_full)),2) FY31_Util_full
+  , round(safe_divide(sum(FY32_UB), sum(FY32_Cap_full)),2) FY32_Util_full
+  , round(safe_divide(sum(FY33_UB), sum(FY33_Cap_full)),2) FY33_Util_full
+  , round(safe_divide(sum(FY34_UB), sum(FY34_Cap_full)),2) FY34_Util_full
   -- Demand percentile
-  , percent_rank() over (order by current_demand) Current_demand_percentile
-  , percent_rank() over (order by FY24_UB) FY24_UB_percentile
-  , percent_rank() over (order by FY24_OD) FY24_OD_percentile
-  , percent_rank() over (order by FY29_UB) FY29_UB_percentile
-from store_level_summary
+  , percent_rank() over (order by sum(current_demand)) Current_demand_percentile
+  , percent_rank() over (order by sum(FY24_UB)) FY24_UB_percentile
+  , percent_rank() over (order by sum(FY24_OD)) FY24_OD_percentile
+  , percent_rank() over (order by sum(FY26_UB)) FY26_UB_percentile
+  , percent_rank() over (order by sum(FY29_UB)) FY29_UB_percentile
+  , sum(store_current_util_greater_than_70) store_current_util_greater_than_70
+  , sum(store_FY26_Util_greater_than_70) store_FY26_Util_greater_than_70
+  , sum(store_FY26_Util_mfc_greater_than_70) store_FY26_Util_mfc_greater_than_70
+  , sum(store_FY26_Util_full_greater_than_70) store_FY26_Util_full_greater_than_70
+  -- store avg demand within markets
+  , safe_divide(sum(FY26_UB), sum(num_of_stores)) FY26_UB_store_avg
+  , percent_rank() over (order by safe_divide(sum(FY26_UB), sum(num_of_stores))) FY26_UB_store_avg_percentile
+from  wmt-everest.mfc_data.top_market_analysis_store_level_summary
+group by 1,2,3,4,5
 )
 
-, store_level_summary_output as (
+, market_level_output as (
 select
   *
   -- Current Demand Percentile 
@@ -169,12 +150,12 @@ select
     else null end Current_demand_percentile_bucket
   -- FY24_UB Percentile
   , case 
-      -- when FY24_UB >= 330 then '0%-10%'
+  --     when FY24_UB >= 1100 then '0%-10%'
       when FY24_UB_percentile >= .9 then '0%-10%'
       when FY24_UB_percentile >= .8 then '10%-20%'
       when FY24_UB_percentile >= .7 then '20%-30%'
       when FY24_UB_percentile >= .6 then '30%-40%'
-      -- when FY24_UB >= 200 then '40%-50%'
+  --     when FY24_UB >= 270 then '40%-50%'
       when FY24_UB_percentile >= .5 then '40%-50%'  
       when FY24_UB_percentile >= .4 then '50%-60%'
       when FY24_UB_percentile >= .3 then '60%-70%'
@@ -184,12 +165,12 @@ select
     else null end FY24_UB_percentile_bucket
   -- FY24_OD Percentile
   , case 
-      -- when FY24_UB >= 330 then '0%-10%'
+  --     when FY24_OD >= 1100 then '0%-10%'
       when FY24_OD_percentile >= .9 then '0%-10%'
       when FY24_OD_percentile >= .8 then '10%-20%'
       when FY24_OD_percentile >= .7 then '20%-30%'
       when FY24_OD_percentile >= .6 then '30%-40%'
-      -- when FY24_UB >= 200 then '40%-50%'
+  --     when FY24_OD >= 270 then '40%-50%'
       when FY24_OD_percentile >= .5 then '40%-50%'  
       when FY24_OD_percentile >= .4 then '50%-60%'
       when FY24_OD_percentile >= .3 then '60%-70%'
@@ -197,14 +178,29 @@ select
       when FY24_OD_percentile >= .1 then '80%-90%'
       when FY24_OD_percentile >= 0 then '90%-100%'
     else null end FY24_OD_percentile_bucket
+  -- FY26_UB Percentile
+  , case 
+  --     when FY26_UB >= 1100 then '0%-10%'
+      when FY26_UB_percentile >= .9 then '0%-10%'
+      when FY26_UB_percentile >= .8 then '10%-20%'
+      when FY26_UB_percentile >= .7 then '20%-30%'
+      when FY26_UB_percentile >= .6 then '30%-40%'
+  --     when FY24_UB >= 270 then '40%-50%'
+      when FY26_UB_percentile >= .5 then '40%-50%'  
+      when FY26_UB_percentile >= .4 then '50%-60%'
+      when FY26_UB_percentile >= .3 then '60%-70%'
+      when FY26_UB_percentile >= .2 then '70%-80%'
+      when FY26_UB_percentile >= .1 then '80%-90%'
+      when FY26_UB_percentile >= 0 then '90%-100%'
+    else null end FY26_UB_percentile_bucket    
   -- FY29_UB Percentile
   , case 
-      -- when FY29_UB >= 720 then '0%-10%'
+  --     when FY29_UB >= 2500 then '0%-10%'
       when FY29_UB_percentile >= .9 then '0%-10%'    
       when FY29_UB_percentile >= .8 then '10%-20%'
       when FY29_UB_percentile >= .7 then '20%-30%'
       when FY29_UB_percentile >= .6 then '30%-40%'
-      -- when FY29_UB >= 400 then '40%-50%'
+  --     when FY29_UB >= 500 then '40%-50%'
       when FY29_UB_percentile >= .5 then '40%-50%'  
       when FY29_UB_percentile >= .4 then '50%-60%'
       when FY29_UB_percentile >= .3 then '60%-70%'
@@ -212,12 +208,47 @@ select
       when FY29_UB_percentile >= .1 then '80%-90%'
       when FY29_UB_percentile >= 0 then '90%-100%'
     else null end FY29_UB_percentile_bucket
-  -- Store utilization flag
-  , case when Current_Util > .7 then 1 else 0 end store_current_util_greater_than_70
-  , case when FY26_Util > .7 then 1 else 0 end store_FY26_Util_greater_than_70  -- w/ PU2.0 remodel
-  , case when FY26_Util_mfc > .7 then 1 else 0 end store_FY26_Util_mfc_greater_than_70  -- w/ Approved MFC
-  , case when FY26_Util_full > .7 then 1 else 0 end store_FY26_Util_full_greater_than_70  -- w/ MFC Roadmap full list
-from store_level_summary_calc
+  -- Market utilization criteria
+  , case when Current_Util > .7 then '> 70%' else '<= 70%' end Current_Util_Criteria -- current (current demand and mpc)
+  , case when FY26_Util > .7 then '> 70%' else '<= 70%' end FY26_Util_Criteria -- w/ PU2.0
+  , case when FY26_Util_mfc > .7 then '> 70%' else '<= 70%' end FY26_Util_mfc_Criteria -- w/ Approved MFC
+  , case when FY26_Util_full > .7 then '> 70%' else '<= 70%' end FY26_Util_full_Criteria  -- w/ MFC Roadmap full list
+  -- Market Count Utilization >70 
+  , case when Current_Util > .7 then 1 else 0 end market_current_util_greater_than_70
+  , case when FY26_Util > .7 then 1 else 0 end market_FY26_util_greater_than_70
+  , case when FY26_Util_mfc > .7 then 1 else 0 end market_FY26_util_mfc_greater_than_70
+  , case when FY26_Util_full > .7 then 1 else 0 end market_FY26_util_full_greater_than_70
+  -- Store Avg. Demand Percentile within Markets
+  , case 
+    -- when FY24_UB >= 330 then '0%-10%'
+    when FY26_UB_store_avg_percentile >= .9 then '0%-10%'
+    when FY26_UB_store_avg_percentile >= .8 then '10%-20%'
+    when FY26_UB_store_avg_percentile >= .7 then '20%-30%'
+    when FY26_UB_store_avg_percentile >= .6 then '30%-40%'
+    -- when FY24_UB >= 200 then '40%-50%'
+    when FY26_UB_store_avg_percentile >= .5 then '40%-50%'  
+    when FY26_UB_store_avg_percentile >= .4 then '50%-60%'
+    when FY26_UB_store_avg_percentile >= .3 then '60%-70%'
+    when FY26_UB_store_avg_percentile >= .2 then '70%-80%'
+    when FY26_UB_store_avg_percentile >= .1 then '80%-90%'
+    when FY26_UB_store_avg_percentile >= 0 then '90%-100%'
+  else null end FY26_UB_store_avg_percentile_bucket
+from market_level_summary
 )
 
-select * from store_level_summary_output
+-- select market_id, count(market_id) from market_level_output
+-- group by 1 having count(market_id) > 1
+
+-- duplicate markets due to stores assigned to different BU wihin a market, solution: choose the BU with max store sale for that market
+, find_BU as (
+select 
+  market_id
+  , SUBDIV_NM
+  , rank() over(partition by market_id order by sum(FY24_UB) desc) as ranknum
+from wmt-everest.mfc_data.top_market_analysis_store_level_summary
+group by 1,2
+qualify ranknum = 1
+)
+
+select a.*, b.SUBDIV_NM from market_level_output a 
+left join find_BU b on a.market_id = b.market_id
