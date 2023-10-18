@@ -194,6 +194,11 @@ select
   , case when FY26_Util > .7 then '> 70%' else '<= 70%' end FY26_Util_Criteria -- w/ PU2.0
   , case when FY26_Util_mfc > .7 then '> 70%' else '<= 70%' end FY26_Util_mfc_Criteria -- w/ Approved MFC
   , case when FY26_Util_full > .7 then '> 70%' else '<= 70%' end FY26_Util_full_Criteria  -- w/ MFC Roadmap full list
+  -- Market Count Utilization >70 
+  , case when Current_Util > .7 then 1 else 0 end market_current_util_greater_than_70
+  , case when FY26_Util > .7 then 1 else 0 end market_FY26_util_greater_than_70
+  , case when FY26_Util_mfc > .7 then 1 else 0 end market_FY26_util_mfc_greater_than_70
+  , case when FY26_Util_full > .7 then 1 else 0 end market_FY26_util_full_greater_than_70
 from market_level_summary
 )
 
