@@ -178,7 +178,8 @@ select
   , d.MPC current_mpc
   , e.Type
   , e.Current_Soln
-  , f.Pick_up_2_0_3_0_Capacity  -- as a reference for now
+  , e.Latest_MPC_assumption_after_remodel
+  -- , f.Pick_up_2_0_3_0_Capacity  -- as a reference for now
   -- MFC Approved
   , g.MFC_MPC MFC_MPC_Approved
   , g.FY_to_reach_max_cap MFC_FY_Approved
@@ -221,7 +222,7 @@ from store_summary a
 left join store_bu_mapping b on a.site_nbr = b.STORE_NBR
 left join market_summary c on a.market_id = c.market_id
 left join wmt-everest.mfc_data.store_current_mpc d on a.site_nbr = d.store
-left join (select distinct Store, Type, Current_Soln from wmt-everest.mfc_data.store_metrics) e on a.site_nbr = e.Store   -- select distinct due to duplicates
+left join (select distinct Store, Type, Current_Soln, Latest_MPC_assumption_after_remodel from wmt-everest.mfc_data.store_metrics) e on a.site_nbr = e.Store   -- select distinct due to duplicates
 left join (select distinct Store, Pick_up_2_0_3_0_Capacity from wmt-everest.mfc_data.store_attributes where Pick_up_2_0_3_0_Capacity is not null and Pick_up_2_0_3_0_Capacity != '0') f on a.site_nbr = f.Store   -- select distinct due to duplicates
 -- MFC
 left join (select * from mfc_list where Status in ('Approved', 'Live')) g on a.site_nbr = g.store  -- mfc approved list
