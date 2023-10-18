@@ -1,0 +1,65 @@
+
+create or replace table wmt-everest.mfc_data.top_market_analysis_mfc_candidates as 
+
+with mfc_model_run_121_stores as (
+select
+  Store
+  , market_id
+  , facility_type
+  , site_type
+  , capacity
+  , MFC_Forced
+  , total_demand -- unit model result, column K
+  , current_demand current_demand_model
+  , store_MPC
+from wmt-everest.mfc_data.mfc_roadmap_new_model_run_121_stores
+)
+
+-- select * from mfc_model_run_121_stores
+, store_level_summary as (
+select
+  site_nbr
+  , cbsa
+  , SUBDIV_NM Store_BU
+  , current_demand 
+  , FY24_cap
+  , Current_Util
+  , Type
+  , Current_Soln
+  , Remodel_Date
+  , Remodel_MPC_raw
+  , MFC_FY_Approved
+  , MFC_MPC_Approved
+  , MFC_FY_Approved_and_Roadmap
+  , MFC_MPC_Approved_and_Roadmap
+  , FY26_UB
+  , FY29_UB
+  , FY26_Util_mfc
+  , FY29_Util_mfc
+from wmt-everest.mfc_data.top_market_analysis_store_level_summary
+)
+
+, market_level_summary as (
+select
+  market_id
+  , SUBDIV_NM Market_BU
+  , list_of_stores
+  , num_of_stores
+  , num_of_SUP
+  , Current_Util Market_Current_Util
+  , FY26_Util_mfc Market_FY26_Util
+  , FY29_Util_mfc Market_FY29_Util
+  , store_current_util_greater_than_70
+  , store_FY26_Util_mfc_greater_than_70
+from wmt-everest.mfc_data.top_market_analysis_market_level_summary
+)
+
+select 
+  a.*
+  , b.* except(site_nbr)
+  , c.* except(market_id)
+from mfc_model_run_121_stores a
+left join store_level_summary b on a.Store = b.site_nbr
+left join market_level_summary c on a.market_id = c.market_id
+
+
