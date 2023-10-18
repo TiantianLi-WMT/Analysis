@@ -182,6 +182,7 @@ select
   -- MFC Approved
   , g.MFC_MPC MFC_MPC_Approved
   , g.FY_to_reach_max_cap MFC_FY_Approved
+  , g.Status
   -- MFC Roadmap
   , h.MFC_MPC MFC_MPC_Approved_and_Roadmap
   , h.FY_to_reach_max_cap MFC_FY_Approved_and_Roadmap
