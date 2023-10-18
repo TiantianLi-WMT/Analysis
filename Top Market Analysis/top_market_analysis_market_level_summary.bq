@@ -119,6 +119,7 @@ select
   , percent_rank() over (order by sum(current_demand)) Current_demand_percentile
   , percent_rank() over (order by sum(FY24_UB)) FY24_UB_percentile
   , percent_rank() over (order by sum(FY24_OD)) FY24_OD_percentile
+  , percent_rank() over (order by sum(FY26_UB)) FY26_UB_percentile
   , percent_rank() over (order by sum(FY29_UB)) FY29_UB_percentile
   , sum(store_current_util_greater_than_70) store_current_util_greater_than_70
   , sum(store_FY26_Util_greater_than_70) store_FY26_Util_greater_than_70
@@ -174,6 +175,21 @@ select
       when FY24_OD_percentile >= .1 then '80%-90%'
       when FY24_OD_percentile >= 0 then '90%-100%'
     else null end FY24_OD_percentile_bucket
+  -- FY26_UB Percentile
+  , case 
+  --     when FY26_UB >= 1100 then '0%-10%'
+      when FY26_UB_percentile >= .9 then '0%-10%'
+      when FY26_UB_percentile >= .8 then '10%-20%'
+      when FY26_UB_percentile >= .7 then '20%-30%'
+      when FY26_UB_percentile >= .6 then '30%-40%'
+  --     when FY24_UB >= 270 then '40%-50%'
+      when FY26_UB_percentile >= .5 then '40%-50%'  
+      when FY26_UB_percentile >= .4 then '50%-60%'
+      when FY26_UB_percentile >= .3 then '60%-70%'
+      when FY26_UB_percentile >= .2 then '70%-80%'
+      when FY26_UB_percentile >= .1 then '80%-90%'
+      when FY26_UB_percentile >= 0 then '90%-100%'
+    else null end FY26_UB_percentile_bucket    
   -- FY29_UB Percentile
   , case 
   --     when FY29_UB >= 2500 then '0%-10%'
