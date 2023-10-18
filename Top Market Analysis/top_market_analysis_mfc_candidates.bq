@@ -1,14 +1,29 @@
 
 create or replace table wmt-everest.mfc_data.top_market_analysis_mfc_candidates as 
 
-with mfc_model_run_121_stores as (
+with store_id_list as (
+select distinct store store_id, market_id from wmt-everest.mfc_data.mfc_roadmap_new_model_run_121_stores
+union all
+select distinct site_nbr store_id, market_id from wmt-everest.mfc_data.top_market_analysis_store_level_summary
+where Status is not null
+)
+
+, store_id_list_dedup as ( 
+select distinct store_id, market_id from store_id_list
+)
+
+, mfc_model_run_121_stores as (
 select
   Store
   , market_id
   , facility_type
   , site_type
   , capacity
-  , MFC_Forced
+  , MFC_Forced MFC_Forced_raw
+  , case
+      when MFC_Forced = true then 'Yes' 
+      when MFC_Forced = false then 'No'
+      else 'NULL' end MFC_Forced  
   , total_demand -- unit model result, column K
   , current_demand current_demand_model
   , store_MPC
@@ -29,6 +44,8 @@ select
   , Remodel_Date
   , Remodel_MPC_raw
   , MFC_FY_Approved
+  , case when Status is not null then Status else 'NULL' end MFC_Status
+  , Status
   , MFC_MPC_Approved
   , MFC_FY_Approved_and_Roadmap
   , MFC_MPC_Approved_and_Roadmap
@@ -56,10 +73,10 @@ from wmt-everest.mfc_data.top_market_analysis_market_level_summary
 
 select 
   a.*
-  , b.* except(site_nbr)
-  , c.* except(market_id)
-from mfc_model_run_121_stores a
-left join store_level_summary b on a.Store = b.site_nbr
-left join market_level_summary c on a.market_id = c.market_id
-
-
+  , b.* except(store, market_id)
+  , c.* except(site_nbr)
+  , d.* except(market_id)
+from store_id_list_dedup a 
+left join mfc_model_run_121_stores b on a.store_id = b.store
+left join store_level_summary c on a.store_id = c.site_nbr
+left join market_level_summary d on a.market_id = d.market_id
