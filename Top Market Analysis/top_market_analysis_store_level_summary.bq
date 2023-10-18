@@ -26,6 +26,7 @@ select
   , Remodel_MPC Remodel_MPC_raw
   , coalesce(Remodel_MPC, current_mpc) Remodel_MPC
   -- MFC Approved & Live (48 stores)
+  , Status
   , MFC_FY_Approved
   , MFC_MPC_Approved
   -- MFC Roadmap (444 stores)
