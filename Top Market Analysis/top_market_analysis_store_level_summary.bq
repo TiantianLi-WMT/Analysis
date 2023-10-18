@@ -21,10 +21,12 @@ select
   , order_size_unscheduled
   , unscheduled_daily_orders
   --## Capacity ##--
-  -- PU2.0 Remodel
+  -- Planned PU2.0 Remodel
   , Remodel_Date
   , Remodel_MPC Remodel_MPC_raw
   , coalesce(Remodel_MPC, current_mpc) Remodel_MPC
+  -- Theo Max Post All Potential PU2.0 Remodel
+  , Latest_MPC_assumption_after_remodel
   -- MFC Approved & Live (48 stores)
   , Status
   , MFC_FY_Approved
@@ -76,7 +78,18 @@ select
   , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2032 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY32_Cap_mfc
   , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2033 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY33_Cap_mfc
   , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2034 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved end FY34_Cap_mfc
-  -- Scenario 4: MFC Full Roadmap 
+  -- Scenario 4: MFC Approved and Live and Max w/ all Potential PU2.0 Upgrade
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2025 then Latest_MPC_assumption_after_remodel else MFC_MPC_Approved end FY25_Cap_mfc_max_pu
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2026 then Latest_MPC_assumption_after_remodel else MFC_MPC_Approved end FY26_Cap_mfc_max_pu
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2027 then Latest_MPC_assumption_after_remodel else MFC_MPC_Approved end FY27_Cap_mfc_max_pu
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2028 then Latest_MPC_assumption_after_remodel else MFC_MPC_Approved end FY28_Cap_mfc_max_pu
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2029 then Latest_MPC_assumption_after_remodel else MFC_MPC_Approved end FY29_Cap_mfc_max_pu
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2030 then Latest_MPC_assumption_after_remodel else MFC_MPC_Approved end FY30_Cap_mfc_max_pu
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2031 then Latest_MPC_assumption_after_remodel else MFC_MPC_Approved end FY31_Cap_mfc_max_pu
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2032 then Latest_MPC_assumption_after_remodel else MFC_MPC_Approved end FY32_Cap_mfc_max_pu
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2033 then Latest_MPC_assumption_after_remodel else MFC_MPC_Approved end FY33_Cap_mfc_max_pu
+  , case when MFC_FY_Approved is null or cast(MFC_FY_Approved as int64) > 2034 then Latest_MPC_assumption_after_remodel else MFC_MPC_Approved end FY34_Cap_mfc_max_pu
+  -- Scenario 5: MFC Full Roadmap 
   , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2025 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY25_Cap_full
   , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2026 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY26_Cap_full
   , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2027 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY27_Cap_full
@@ -89,7 +102,7 @@ select
   , case when MFC_FY_Approved_and_Roadmap is null or cast(MFC_FY_Approved_and_Roadmap as int64) > 2034 then coalesce(Remodel_MPC, current_mpc) else MFC_MPC_Approved_and_Roadmap end FY34_Cap_full
 from  wmt-everest.mfc_data.top_market_analysis_base_query
 where 1=1
-  -- and SUBDIV_NM is not null -- excluding 7 stores
+  and SUBDIV_NM is not null -- excluding 7 stores
 )
 
 , store_level_summary_calc as (
@@ -114,7 +127,7 @@ select
   , round(safe_divide(FY32_UB, FY32_Cap),2) FY32_Util
   , round(safe_divide(FY33_UB, FY33_Cap),2) FY33_Util
   , round(safe_divide(FY34_UB, FY34_Cap),2) FY34_Util
-  -- Scenario 3: Utilization w/ Planned PU2.0 Remodel and MFC Approved & Live
+  -- Scenario 3: Utilization w/ All Potential PU2.0 Remodel and MFC Approved & Live
   -- one demand fcst
   , round(safe_divide(FY25_OD, FY25_Cap_mfc),2) FY25_Util_OD_mfc
   , round(safe_divide(FY26_OD, FY26_Cap_mfc),2) FY26_Util_OD_mfc
@@ -129,7 +142,22 @@ select
   , round(safe_divide(FY32_UB, FY32_Cap_mfc),2) FY32_Util_mfc
   , round(safe_divide(FY33_UB, FY33_Cap_mfc),2) FY33_Util_mfc
   , round(safe_divide(FY34_UB, FY34_Cap_mfc),2) FY34_Util_mfc
-  -- Scenario 4: Utilization w/ Planned PU2.0 Remodel and MFC Roadmap Full list
+  -- Scenario 4: Utilization w/ Planned PU2.0 Remodel and MFC Approved & Live
+  -- one demand fcst
+  , round(safe_divide(FY25_OD, FY25_Cap_mfc_max_pu),2) FY25_Util_OD_mfc_max_pu
+  , round(safe_divide(FY26_OD, FY26_Cap_mfc_max_pu),2) FY26_Util_OD_mfc_max_pu
+  -- upper bound fcst
+  , round(safe_divide(FY25_UB, FY25_Cap_mfc_max_pu),2) FY25_Util_mfc_max_pu
+  , round(safe_divide(FY26_UB, FY26_Cap_mfc_max_pu),2) FY26_Util_mfc_max_pu
+  , round(safe_divide(FY27_UB, FY27_Cap_mfc_max_pu),2) FY27_Util_mfc_max_pu
+  , round(safe_divide(FY28_UB, FY28_Cap_mfc_max_pu),2) FY28_Util_mfc_max_pu
+  , round(safe_divide(FY29_UB, FY29_Cap_mfc_max_pu),2) FY29_Util_mfc_max_pu
+  , round(safe_divide(FY30_UB, FY30_Cap_mfc_max_pu),2) FY30_Util_mfc_max_pu
+  , round(safe_divide(FY31_UB, FY31_Cap_mfc_max_pu),2) FY31_Util_mfc_max_pu
+  , round(safe_divide(FY32_UB, FY32_Cap_mfc_max_pu),2) FY32_Util_mfc_max_pu
+  , round(safe_divide(FY33_UB, FY33_Cap_mfc_max_pu),2) FY33_Util_mfc_max_pu
+  , round(safe_divide(FY34_UB, FY34_Cap_mfc_max_pu),2) FY34_Util_mfc_max_pu
+  -- Scenario 5: Utilization w/ Planned PU2.0 Remodel and MFC Roadmap Full list
   -- one demand fcst
   , round(safe_divide(FY25_OD, FY25_Cap_full),2) FY25_Util_OD_full
   , round(safe_divide(FY26_OD, FY26_Cap_full),2) FY26_Util_OD_full
