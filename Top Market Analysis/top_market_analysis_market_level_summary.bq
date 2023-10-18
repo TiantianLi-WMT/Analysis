@@ -55,7 +55,18 @@ select
   , sum(FY32_Cap_mfc) FY32_Cap_mfc
   , sum(FY33_Cap_mfc) FY33_Cap_mfc
   , sum(FY34_Cap_mfc) FY34_Cap_mfc
-  -- Scenario 4: MFC Full Roadmap 
+  -- Scenario 4: MFC Approved and Live Capacity and All Potential PU2.0
+  , sum(FY25_Cap_mfc_max_pu) FY25_Cap_mfc_max_pu
+  , sum(FY26_Cap_mfc_max_pu) FY26_Cap_mfc_max_pu
+  , sum(FY27_Cap_mfc_max_pu) FY27_Cap_mfc_max_pu
+  , sum(FY28_Cap_mfc_max_pu) FY28_Cap_mfc_max_pu
+  , sum(FY29_Cap_mfc_max_pu) FY29_Cap_mfc_max_pu
+  , sum(FY30_Cap_mfc_max_pu) FY30_Cap_mfc_max_pu
+  , sum(FY31_Cap_mfc_max_pu) FY31_Cap_mfc_max_pu
+  , sum(FY32_Cap_mfc_max_pu) FY32_Cap_mfc_max_pu
+  , sum(FY33_Cap_mfc_max_pu) FY33_Cap_mfc_max_pu
+  , sum(FY34_Cap_mfc_max_pu) FY34_Cap_mfc_max_pu
+  -- Scenario 5: MFC Full Roadmap 
   , sum(FY25_Cap_full) FY25_Cap_full
   , sum(FY26_Cap_full) FY26_Cap_full
   , sum(FY27_Cap_full) FY27_Cap_full
@@ -101,7 +112,22 @@ select
   , round(safe_divide(sum(FY32_UB), sum(FY32_Cap_mfc)),2) FY32_Util_mfc
   , round(safe_divide(sum(FY33_UB), sum(FY33_Cap_mfc)),2) FY33_Util_mfc
   , round(safe_divide(sum(FY34_UB), sum(FY34_Cap_mfc)),2) FY34_Util_mfc
-  -- Scenario 4: Utilization w/ Planned PU2.0 Remodel and MFC Roadmap Full list
+  -- Scenario 4: Utilization w/ All Potential PU2.0 Remodel and MFC Approved & Live
+  -- one demand fcst
+  , round(safe_divide(sum(FY25_OD), sum(FY25_Cap_mfc_max_pu)),2) FY25_Util_OD_mfc_max_pu
+  , round(safe_divide(sum(FY26_OD), sum(FY26_Cap_mfc_max_pu)),2) FY26_Util_OD_mfc_max_pu
+  -- upper bound fcst
+  , round(safe_divide(sum(FY25_UB), sum(FY25_Cap_mfc_max_pu)),2) FY25_Util_mfc_max_pu
+  , round(safe_divide(sum(FY26_UB), sum(FY26_Cap_mfc_max_pu)),2) FY26_Util_mfc_max_pu
+  , round(safe_divide(sum(FY27_UB), sum(FY27_Cap_mfc_max_pu)),2) FY27_Util_mfc_max_pu
+  , round(safe_divide(sum(FY28_UB), sum(FY28_Cap_mfc_max_pu)),2) FY28_Util_mfc_max_pu
+  , round(safe_divide(sum(FY29_UB), sum(FY29_Cap_mfc_max_pu)),2) FY29_Util_mfc_max_pu
+  , round(safe_divide(sum(FY30_UB), sum(FY30_Cap_mfc_max_pu)),2) FY30_Util_mfc_max_pu
+  , round(safe_divide(sum(FY31_UB), sum(FY31_Cap_mfc_max_pu)),2) FY31_Util_mfc_max_pu
+  , round(safe_divide(sum(FY32_UB), sum(FY32_Cap_mfc_max_pu)),2) FY32_Util_mfc_max_pu
+  , round(safe_divide(sum(FY33_UB), sum(FY33_Cap_mfc_max_pu)),2) FY33_Util_mfc_max_pu
+  , round(safe_divide(sum(FY34_UB), sum(FY34_Cap_mfc_max_pu)),2) FY34_Util_mfc_max_pu
+  -- Scenario 5: Utilization w/ Planned PU2.0 Remodel and MFC Roadmap Full list
   , round(safe_divide(sum(FY25_OD), sum(FY25_Cap_full)),2) FY25_Util_OD_full
   , round(safe_divide(sum(FY26_OD), sum(FY26_Cap_full)),2) FY26_Util_OD_full
   -- upper bound fcst
