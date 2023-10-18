@@ -28,6 +28,7 @@ select
   -- Theo Max Post All Potential PU2.0 Remodel
   , Latest_MPC_assumption_after_remodel
   -- MFC Approved & Live (48 stores)
+  , Final_MFC_type
   , Status
   , MFC_FY_Approved
   , MFC_MPC_Approved
