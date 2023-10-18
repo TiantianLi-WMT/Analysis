@@ -149,7 +149,7 @@ pivot
 
 --## 4.Capacity Inputs ##--
 
-, mfc_list as ( -- 444 mfc list, 44 of them approved, 4 of them live
+, mfc_list as ( -- 444 mfc list, 43 of them approved, 5 of them live
 select
   Store
   , Final_MFC_type
@@ -180,13 +180,14 @@ select
   , e.Current_Soln
   , e.Latest_MPC_assumption_after_remodel
   -- , f.Pick_up_2_0_3_0_Capacity  -- as a reference for now
-  -- MFC Approved
-  , g.MFC_MPC MFC_MPC_Approved
-  , g.FY_to_reach_max_cap MFC_FY_Approved
-  , g.Status
+  -- MFC Approved and Live
+  , case when g.Status in ('Approved', 'Live') then g.MFC_MPC else null end MFC_MPC_Approved
+  , case when g.Status in ('Approved', 'Live') then g.FY_to_reach_max_cap else null end MFC_FY_Approved
   -- MFC Roadmap
-  , h.MFC_MPC MFC_MPC_Approved_and_Roadmap
-  , h.FY_to_reach_max_cap MFC_FY_Approved_and_Roadmap
+  , g.MFC_MPC MFC_MPC_Approved_and_Roadmap
+  , g.FY_to_reach_max_cap MFC_FY_Approved_and_Roadmap
+  , g.Final_MFC_type
+  , g.Status
   -- PU2.0 Remodel
   , coalesce(i.Possession, i.GO_Date) Remodel_Date
   , i.Project_Type
@@ -225,8 +226,8 @@ left join wmt-everest.mfc_data.store_current_mpc d on a.site_nbr = d.store
 left join (select distinct Store, Type, Current_Soln, Latest_MPC_assumption_after_remodel from wmt-everest.mfc_data.store_metrics) e on a.site_nbr = e.Store   -- select distinct due to duplicates
 left join (select distinct Store, Pick_up_2_0_3_0_Capacity from wmt-everest.mfc_data.store_attributes where Pick_up_2_0_3_0_Capacity is not null and Pick_up_2_0_3_0_Capacity != '0') f on a.site_nbr = f.Store   -- select distinct due to duplicates
 -- MFC
-left join (select * from mfc_list where Status in ('Approved', 'Live')) g on a.site_nbr = g.store  -- mfc approved list
-left join mfc_list h on a.site_nbr = h.store -- mfc full list
+left join mfc_list g on a.site_nbr = g.store
+-- Planned PU2.0 Remodel
 left join wmt-everest.mfc_data.store_remodel_plan i on a.site_nbr = i.Store_Number
 -- FCST
 left join wmt-everest.mfc_data.store_ub_rebaseline_fcst j on a.site_nbr = j.Store -- upper bound fcst
