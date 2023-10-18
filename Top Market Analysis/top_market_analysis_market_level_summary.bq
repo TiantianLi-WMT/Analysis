@@ -125,6 +125,13 @@ select
   , sum(store_FY26_Util_greater_than_70) store_FY26_Util_greater_than_70
   , sum(store_FY26_Util_mfc_greater_than_70) store_FY26_Util_mfc_greater_than_70
   , sum(store_FY26_Util_full_greater_than_70) store_FY26_Util_full_greater_than_70
+  -- store avg demand within markets
+  , safe_divide(sum(current_demand), sum(num_of_stores)) Current_demand_store_avg
+  , safe_divide(sum(FY26_UB), sum(num_of_stores)) FY26_UB_store_avg
+  , safe_divide(sum(FY29_UB), sum(num_of_stores)) FY29_UB_store_avg
+  , percent_rank() over (order by safe_divide(sum(current_demand), sum(num_of_stores))) Current_demand_store_avg_percentile
+  , percent_rank() over (order by safe_divide(sum(FY26_UB), sum(num_of_stores))) FY26_UB_store_avg_percentile
+  , percent_rank() over (order by safe_divide(sum(FY29_UB), sum(num_of_stores))) FY29_UB_store_avg_percentile
 from  wmt-everest.mfc_data.top_market_analysis_store_level_summary
 group by 1,2,3,4,5
 )
@@ -215,6 +222,54 @@ select
   , case when FY26_Util > .7 then 1 else 0 end market_FY26_util_greater_than_70
   , case when FY26_Util_mfc > .7 then 1 else 0 end market_FY26_util_mfc_greater_than_70
   , case when FY26_Util_full > .7 then 1 else 0 end market_FY26_util_full_greater_than_70
+  -- Store Avg. Demand Percentile within Markets
+  -- current
+  , case 
+    -- when FY26_UB >= 330 then '0%-10%'
+    when Current_demand_store_avg_percentile >= .9 then '0%-10%'
+    when Current_demand_store_avg_percentile >= .8 then '10%-20%'
+    when Current_demand_store_avg_percentile >= .7 then '20%-30%'
+    when Current_demand_store_avg_percentile >= .6 then '30%-40%'
+    -- when FY26_UB >= 200 then '40%-50%'
+    when Current_demand_store_avg_percentile >= .5 then '40%-50%'  
+    when Current_demand_store_avg_percentile >= .4 then '50%-60%'
+    when Current_demand_store_avg_percentile >= .3 then '60%-70%'
+    when Current_demand_store_avg_percentile >= .2 then '70%-80%'
+    when Current_demand_store_avg_percentile >= .1 then '80%-90%'
+    when Current_demand_store_avg_percentile >= 0 then '90%-100%'
+  else null end Current_demand_store_avg_percentile_bucket
+  -- FY26
+  , case 
+    -- when FY26_UB >= 330 then '0%-10%'
+    when FY26_UB_store_avg_percentile >= .9 then '0%-10%'
+    when FY26_UB_store_avg_percentile >= .8 then '10%-20%'
+    when FY26_UB_store_avg_percentile >= .7 then '20%-30%'
+    when FY26_UB_store_avg_percentile >= .6 then '30%-40%'
+    -- when FY26_UB >= 200 then '40%-50%'
+    when FY26_UB_store_avg_percentile >= .5 then '40%-50%'  
+    when FY26_UB_store_avg_percentile >= .4 then '50%-60%'
+    when FY26_UB_store_avg_percentile >= .3 then '60%-70%'
+    when FY26_UB_store_avg_percentile >= .2 then '70%-80%'
+    when FY26_UB_store_avg_percentile >= .1 then '80%-90%'
+    when FY26_UB_store_avg_percentile >= 0 then '90%-100%'
+  else null end FY26_UB_store_avg_percentile_bucket
+  -- FY29
+  , case 
+    -- when FY26_UB >= 330 then '0%-10%'
+    when FY29_UB_store_avg_percentile >= .9 then '0%-10%'
+    when FY29_UB_store_avg_percentile >= .8 then '10%-20%'
+    when FY29_UB_store_avg_percentile >= .7 then '20%-30%'
+    when FY29_UB_store_avg_percentile >= .6 then '30%-40%'
+    -- when FY26_UB >= 200 then '40%-50%'
+    when FY29_UB_store_avg_percentile >= .5 then '40%-50%'  
+    when FY29_UB_store_avg_percentile >= .4 then '50%-60%'
+    when FY29_UB_store_avg_percentile >= .3 then '60%-70%'
+    when FY29_UB_store_avg_percentile >= .2 then '70%-80%'
+    when FY29_UB_store_avg_percentile >= .1 then '80%-90%'
+    when FY29_UB_store_avg_percentile >= 0 then '90%-100%'
+  else null end FY29_UB_store_avg_percentile_bucket
+  -- Num of Stores > 70%
+  , store_FY26_Util_mfc_greater_than_70 / num_of_stores pct_store_greater_than_70_FY26_util_mfc 
 from market_level_summary
 )
 
