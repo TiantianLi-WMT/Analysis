@@ -147,7 +147,6 @@ select
   , percent_rank() over (order by sum(FY24_OD)) FY24_OD_percentile
   , percent_rank() over (order by sum(FY26_UB)) FY26_UB_percentile
   , percent_rank() over (order by sum(FY29_UB)) FY29_UB_percentile
-  , rank() over (order by sum(FY26_UB) desc) FY26_UB_Rank 
   , sum(store_current_util_greater_than_70) store_current_util_greater_than_70
   , sum(store_FY26_Util_greater_than_70) store_FY26_Util_greater_than_70
   , sum(store_FY26_Util_mfc_greater_than_70) store_FY26_Util_mfc_greater_than_70
@@ -298,6 +297,7 @@ select
   -- Num of Stores > 70%
   , store_FY26_Util_mfc_greater_than_70 / num_of_stores pct_store_greater_than_70_FY26_util_mfc 
   , rank() over(order by FY26_Util_mfc_max_pu desc) market_FY26_util_mfc_max_pu_rank
+  , rank() over(order by FY26_UB desc) market_FY26_UB_Rank 
 from market_level_summary
 )
 
