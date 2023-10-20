@@ -297,7 +297,7 @@ select
   else null end FY29_UB_store_avg_percentile_bucket
   -- Num of Stores > 70%
   , store_FY26_Util_mfc_greater_than_70 / num_of_stores pct_store_greater_than_70_FY26_util_mfc 
-  , rank() over(partition by market_id order by FY26_Util_mfc_max_pu desc) market_FY26_util_mfc_max_pu_rank
+  , rank() over(order by FY26_Util_mfc_max_pu desc) market_FY26_util_mfc_max_pu_rank
 from market_level_summary
 )
 
