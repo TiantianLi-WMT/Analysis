@@ -313,7 +313,7 @@ from market_level_summary
 select 
   market_id
   , SUBDIV_NM
-  , rank() over(order by sum(FY24_UB) desc) as ranknum
+  , rank() over(partition by market_id order by sum(FY24_UB) desc) as ranknum
 from wmt-everest.mfc_data.top_market_analysis_store_level_summary
 group by 1,2
 qualify ranknum = 1
