@@ -152,12 +152,12 @@ select
   , sum(store_FY26_Util_mfc_greater_than_70) store_FY26_Util_mfc_greater_than_70
   , sum(store_FY26_Util_full_greater_than_70) store_FY26_Util_full_greater_than_70
   -- store avg demand within markets
-  , safe_divide(sum(current_demand), sum(num_of_stores)) Current_demand_store_avg
-  , safe_divide(sum(FY26_UB), sum(num_of_stores)) FY26_UB_store_avg
-  , safe_divide(sum(FY29_UB), sum(num_of_stores)) FY29_UB_store_avg
-  , percent_rank() over (order by safe_divide(sum(current_demand), sum(num_of_stores))) Current_demand_store_avg_percentile
-  , percent_rank() over (order by safe_divide(sum(FY26_UB), sum(num_of_stores))) FY26_UB_store_avg_percentile
-  , percent_rank() over (order by safe_divide(sum(FY29_UB), sum(num_of_stores))) FY29_UB_store_avg_percentile
+  , safe_divide(sum(current_demand), num_of_stores) Current_demand_store_avg
+  , safe_divide(sum(FY26_UB), num_of_stores) FY26_UB_store_avg
+  , safe_divide(sum(FY29_UB), num_of_stores) FY29_UB_store_avg
+  , percent_rank() over (order by safe_divide(sum(current_demand), num_of_stores)) Current_demand_store_avg_percentile
+  , percent_rank() over (order by safe_divide(sum(FY26_UB), num_of_stores)) FY26_UB_store_avg_percentile
+  , percent_rank() over (order by safe_divide(sum(FY29_UB), num_of_stores)) FY29_UB_store_avg_percentile
 from  wmt-everest.mfc_data.top_market_analysis_store_level_summary
 group by 1,2,3,4,5
 )
