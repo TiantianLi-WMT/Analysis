@@ -1,0 +1,72 @@
+-- Purpose: FY24 YTD Actuals of Store Fulfiilled Digital Orders
+-- Author: Tiantian Li
+-- Last Update: 10/26/2023
+-- Notes: Define hierachy to filter actuals by scheduled/unscheduled, express/non_express, and spark/non_spark
+
+create or replace table `wmt-everest.mfc_data.store_fulfilled_digital_orders_history` as 
+
+with order_history_main as (
+select distinct
+  order_nbr -- parent order
+  , fulfmt_order_nbr  -- child order if ship separately
+  , svc_fulfmt_type_desc 
+  , ORDER_PLCD_DT  -- order placed date
+  , svc_nm
+  , cast(right(ship_node_ovrd_org_cd,4) as int64) as site_id
+  , extract(year from ORDER_PLCD_DT) year_id
+  , extract(month from ORDER_PLCD_DT) month_id
+  , case
+      when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('SCHEDULED_DELIVERY','SCHEDULED_PICKUP','IN_HOME_DELIVERY','INHOME','EXPRESS_DELIVERY', 'EXPRESS_PICKUP') then 'Scheduled'
+      when (upper(svc_nm) in ('SFS','SI') and svc_fulfmt_type_desc in ('UNSCHEDULED_DELIVERY')) or (svc_fulfmt_type_desc = 'UNSCHEDULED_PICKUP') then 'Unscheduled'
+      else 'Other' end Scheduled_Unscheduled
+  , case
+      when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('SCHEDULED_DELIVERY') then "OG_Delivery_Regular"
+      when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('EXPRESS_DELIVERY') then "OG_Delivery_Express"
+      when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('SCHEDULED_PICKUP') then "OG_Pickup_Regular"
+      when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('EXPRESS_PICKUP') then "OG_Pickup_Express"
+      when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('IN_HOME_DELIVERY','INHOME') then "InHome_Delivery"
+      when upper(svc_nm) in ('SFS','SI') and svc_fulfmt_type_desc in ('UNSCHEDULED_DELIVERY') and ozark_ind =1 THEN 'DFS'
+      when upper(svc_nm) in ('SFS','SI') and svc_fulfmt_type_desc in ('UNSCHEDULED_DELIVERY') and ozark_ind =0 THEN 'SFS'
+      when svc_fulfmt_type_desc in ('UNSCHEDULED_PICKUP') then 'GM_Pickup' -- all unscheduled pickup has svc_nm = SI and ozark_ind = 0
+      else "Other" end Fulfillment_Type  
+  , case when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('EXPRESS_DELIVERY', 'EXPRESS_PICKUP') then 'Express' else 'Non-Express' end Express_NonExpress
+  , sum(net_cncl_qty) Units
+  , sum(gmv_order_amt) GMV
+from wmt-edw-prod.WW_CREW_DL_RPT_VM.CNSLD_ORDER_ITEM
+where 1=1
+  and ORDER_PLCD_DT between date_trunc('2023-02-01', week(sunday)) and date_trunc(current_date(), week(sunday)) - 1  -- FY24 YTD
+  and op_cmpny_cd = 'WMT.COM'
+  and fulfmt_status_desc = 'SHIPPED'
+  and net_cncl_qty > 0
+  and gmv_cr_ind = 1
+  and gmv_ind = 1
+  and UPPER(RPT_LVL_0_NM) <> 'WALMART SERVICES'
+  and UPPER(PROD_NM) NOT LIKE '%GIFT CARD%'
+  and dstrbtr_grp_type_nm IN ('STORE')
+  -- and cast(right(ship_node_ovrd_org_cd,4) as int64) = 3520
+group by 1,2,3,4,5,6,7,8,9,10
+)
+
+, orders_spark_mapping as (
+select distinct
+  STORE_NUM
+  , SALES_ORDER_NUM
+  , PO_NUM
+  , SPARK_SHOPPER_IND
+from `wmt-edw-prod.WW_MB_DL_VM.STORE_FULFMT_ORDER_ITEM_360` a
+where 1=1
+  and ORDER_STATUS_DESC = 'SHIPPED' -- completed orders only
+  and RPT_DT between '2022-02-01' and current_date()
+)
+
+, join_results as (
+select 
+  a.*
+  , b.SPARK_SHOPPER_IND
+  , case when b.SPARK_SHOPPER_IND = 1 then "Spark" else "Non-Spark" end Spark_NonSpark
+from order_history_main a
+left join orders_spark_mapping b on a.order_nbr = b.SALES_ORDER_NUM and a.site_id = b.STORE_NUM and a.fulfmt_order_nbr = b.PO_NUM
+)
+
+select * from join_results
+
