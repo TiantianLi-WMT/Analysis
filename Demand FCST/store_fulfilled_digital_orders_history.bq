@@ -14,11 +14,18 @@ select distinct
   , svc_nm
   , cast(right(ship_node_ovrd_org_cd,4) as int64) as site_id
   , extract(year from ORDER_PLCD_DT) year_id
+  , extract(quarter from ORDER_PLCD_DT) quarter_id
   , extract(month from ORDER_PLCD_DT) month_id
+  , date_trunc(ORDER_PLCD_DT, week) order_week
   , case
       when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('SCHEDULED_DELIVERY','SCHEDULED_PICKUP','IN_HOME_DELIVERY','INHOME','EXPRESS_DELIVERY', 'EXPRESS_PICKUP') then 'Scheduled'
       when (upper(svc_nm) in ('SFS','SI') and svc_fulfmt_type_desc in ('UNSCHEDULED_DELIVERY')) or (svc_fulfmt_type_desc = 'UNSCHEDULED_PICKUP') then 'Unscheduled'
       else 'Other' end Scheduled_Unscheduled
+  , case
+      when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('SCHEDULED_DELIVERY','SCHEDULED_PICKUP','IN_HOME_DELIVERY','INHOME') then "OPD_Regular"
+      when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('EXPRESS_DELIVERY','EXPRESS_PICKUP') then "OPD_Express"
+      when (upper(svc_nm) in ('SFS','SI') and svc_fulfmt_type_desc in ('UNSCHEDULED_DELIVERY')) or (svc_fulfmt_type_desc = 'UNSCHEDULED_PICKUP') then 'Unscheduled'
+      else "Other" end OPD_break_down
   , case
       when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('SCHEDULED_DELIVERY') then "OG_Delivery_Regular"
       when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('EXPRESS_DELIVERY') then "OG_Delivery_Express"
@@ -44,7 +51,7 @@ where 1=1
   and UPPER(PROD_NM) NOT LIKE '%GIFT CARD%'
   and dstrbtr_grp_type_nm IN ('STORE')
   -- and cast(right(ship_node_ovrd_org_cd,4) as int64) = 3520
-group by 1,2,3,4,5,6,7,8,9,10
+group by 1,2,3,4,5,6,7,8,9,10,11,12,13
 )
 
 , orders_spark_mapping as (
@@ -69,4 +76,3 @@ left join orders_spark_mapping b on a.order_nbr = b.SALES_ORDER_NUM and a.site_i
 )
 
 select * from join_results
-
