@@ -50,7 +50,7 @@ where 1=1
   and UPPER(RPT_LVL_0_NM) <> 'WALMART SERVICES'
   and UPPER(PROD_NM) NOT LIKE '%GIFT CARD%'
   and dstrbtr_grp_type_nm IN ('STORE')
-  -- and cast(right(ship_node_ovrd_org_cd,4) as int64) = 3520
+  -- and cast(right(ship_node_ovrd_org_cd,4) as int64) = 3520 -- filter/test with stores
 group by 1,2,3,4,5,6,7,8,9,10,11,12,13
 )
 
@@ -75,4 +75,21 @@ from order_history_main a
 left join orders_spark_mapping b on a.order_nbr = b.SALES_ORDER_NUM and a.site_id = b.STORE_NUM and a.fulfmt_order_nbr = b.PO_NUM
 )
 
-select * from join_results
+-- aggregate output
+select
+  site_id
+  , year_id
+  , quarter_id
+  , month_id
+  , order_week
+  , Scheduled_Unscheduled
+  , OPD_break_down
+  , Fulfillment_Type
+  , Express_NonExpress
+  , Spark_NonSpark
+  , count(distinct order_nbr) Orders
+  , count(distinct fulfmt_order_nbr) POs
+  , sum(Units) Units
+  , sum(GMV) GMV
+from join_results
+group by 1,2,3,4,5,6,7,8,9,10
