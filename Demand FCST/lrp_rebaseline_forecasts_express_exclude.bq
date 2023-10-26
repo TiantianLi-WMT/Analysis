@@ -1,11 +1,54 @@
--- Purpose: LRP Re-baseline FCST Express Excluded
+-- Purpose: LRP Re-baseline FCST Express Excluded & One Demand FCST
 -- Author: Tiantian Li
 -- Last Update: 10/26/2023
 -- Notes: file uploaded into bq table from https://teams.wal-mart.com/:x:/r/sites/WalUSSCStrategyTransformation/Shared%20Documents/Wal%20US%20SC%20Strategy%20%26%20Transformation/Last%20Mile%20Strategy/1_Segments/MFC/Store%20Level%20Forecasting/Store%20Level%2010yrs%20LRP%20and%20re-baseline%20forecast.xlsx?d=wa1758764f9de46b999e791270b790ef9&csf=1&web=1&e=PnvnBs
 
-create or replace table `wmt-everest.mfc_data.lrp_rebaseline_forecasts_express_exclude` as 
+create or replace table `wmt-everest.mfc_data.lrp_rebaseline_forecasts_express_exclude_and_one_demand_fcst` as 
 
-with struct_forecasts_ub as (
+-- Reformat One Demand FCST 
+with one_demand_fcst_prep as (
+select 
+  StoreId
+  , concat('FY',cast(right(left(Date,4),2) as int64)+1) FY
+  , (sum(Sch_Delivery) + sum(Sch_Pickup) + sum(InHome)) / 360 OPD_Regular
+  , sum(Sch_Delivery) / 360 OG_Delivery
+  , sum(Sch_Pickup) / 360 OG_Pickup
+  , sum(InHome) / 360 InHome_Delivery
+  , sum(TotalOvFlw) / 360 TotalOvFlw
+  , sum(Total_Forecast) / 360 Total_Forecast
+from `wmt-one-demand-dev.UnconstraintDigitalDemand.StoreWideChannelLevelDemandData` 
+where 1=1
+  and Date >= '2023-01-01'
+group by 1,2
+)
+
+, one_demand_fcst_reformat as (
+select 
+  StoreId
+  , FY
+  , [struct('OPD_Regular' as SubType, OPD_Regular as forecast) 
+  , struct('OG_Delivery' as SubType, OG_Delivery as forecast) 
+  , struct('OG_Pickup' as SubType, OG_Pickup as forecast) 
+  , struct('InHome_Delivery' as SubType, InHome_Delivery as forecast) 
+  , struct('TotalOvFlw' as SubType, TotalOvFlw as forecast) 
+  , struct('Total_Forecast' as SubType, Total_Forecast as forecast) 
+  ] Forecast
+from one_demand_fcst_prep
+)
+
+, one_demand_fcst_ready as (
+select 
+  StoreId
+  , 'One Demand' Type
+  , Forecast.SubType SubType
+  , FY
+  , cast(Forecast.forecast as int64) FCST 
+from one_demand_fcst_reformat
+cross join unnest(one_demand_fcst_reformat.Forecast) AS Forecast
+)
+
+-- Reformat LRP FCST
+, struct_forecasts_ub as (
 select 
   store
   , [struct('FY24' as FY, FY24 as forecast) 
@@ -44,7 +87,8 @@ from wmt-everest.mfc_data.store_lb_rebaseline_fcst
 , ub_fcst_reformat as (
 select 
   store
-  , 'Upper Bound' Type
+  , 'LRP' Type
+  , 'Ubber Bound' SubType
   , Forecast.FY FY
   , cast(replace(Forecast.forecast,'-','0') as int64) FCST 
 from struct_forecasts_ub
@@ -54,13 +98,20 @@ cross join unnest(struct_forecasts_ub.Forecast) AS Forecast
 , lb_fcst_reformat as (
 select 
   store
-  , 'Lower Bound' Type
+  , 'LRP' Type
+  , 'Lower Bound' SubType
   , Forecast.FY FY
   , cast(Forecast.forecast as int64) FCST 
 from struct_forecasts_lb
 cross join unnest(struct_forecasts_lb.Forecast) AS Forecast
 )
 
+, lrp_fcst_ready as (
 select * from ub_fcst_reformat
 union all
 select * from lb_fcst_reformat
+)
+
+select * from lrp_fcst_ready
+union all 
+select * from one_demand_fcst_ready
