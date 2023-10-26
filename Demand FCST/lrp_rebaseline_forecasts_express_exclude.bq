@@ -44,7 +44,7 @@ from wmt-everest.mfc_data.store_lb_rebaseline_fcst
 , ub_fcst_reformat as (
 select 
   store
-  , 'UB' Type
+  , 'Upper Bound' Type
   , Forecast.FY FY
   , cast(replace(Forecast.forecast,'-','0') as int64) FCST 
 from struct_forecasts_ub
@@ -54,7 +54,7 @@ cross join unnest(struct_forecasts_ub.Forecast) AS Forecast
 , lb_fcst_reformat as (
 select 
   store
-  , 'LB' Type
+  , 'Lower Bound' Type
   , Forecast.FY FY
   , cast(Forecast.forecast as int64) FCST 
 from struct_forecasts_lb
