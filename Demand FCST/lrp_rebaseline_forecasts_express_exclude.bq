@@ -3,6 +3,8 @@
 -- Last Update: 10/26/2023
 -- Notes: file uploaded into bq table from https://teams.wal-mart.com/:x:/r/sites/WalUSSCStrategyTransformation/Shared%20Documents/Wal%20US%20SC%20Strategy%20%26%20Transformation/Last%20Mile%20Strategy/1_Segments/MFC/Store%20Level%20Forecasting/Store%20Level%2010yrs%20LRP%20and%20re-baseline%20forecast.xlsx?d=wa1758764f9de46b999e791270b790ef9&csf=1&web=1&e=PnvnBs
 
+
+
 create or replace table `wmt-everest.mfc_data.lrp_rebaseline_forecasts_express_exclude_and_one_demand_fcst` as 
 
 -- Reformat One Demand FCST 
@@ -10,12 +12,12 @@ with one_demand_fcst_prep as (
 select 
   StoreId
   , concat('FY',cast(right(left(Date,4),2) as int64)+1) FY
-  , (sum(Sch_Delivery) + sum(Sch_Pickup) + sum(InHome)) / 360 OPD_Regular
+  -- , (sum(Sch_Delivery) + sum(Sch_Pickup) + sum(InHome)) / 360 OPD_Regular
   , sum(Sch_Delivery) / 360 OG_Delivery
   , sum(Sch_Pickup) / 360 OG_Pickup
   , sum(InHome) / 360 InHome_Delivery
-  , sum(TotalOvFlw) / 360 TotalOvFlw
-  , sum(Total_Forecast) / 360 Total_Forecast
+  -- , sum(TotalOvFlw) / 360 TotalOvFlw
+  -- , sum(Total_Forecast) / 360 Total_Forecast
 from `wmt-one-demand-dev.UnconstraintDigitalDemand.StoreWideChannelLevelDemandData` 
 where 1=1
   and Date >= '2023-01-01'
@@ -26,12 +28,12 @@ group by 1,2
 select 
   StoreId
   , FY
-  , [struct('OPD_Regular' as SubType, OPD_Regular as forecast) 
-  , struct('OG_Delivery' as SubType, OG_Delivery as forecast) 
+  -- , [struct('OPD_Regular' as SubType, OPD_Regular as forecast) 
+  , [struct('OG_Delivery' as SubType, OG_Delivery as forecast) 
   , struct('OG_Pickup' as SubType, OG_Pickup as forecast) 
   , struct('InHome_Delivery' as SubType, InHome_Delivery as forecast) 
-  , struct('TotalOvFlw' as SubType, TotalOvFlw as forecast) 
-  , struct('Total_Forecast' as SubType, Total_Forecast as forecast) 
+  -- , struct('TotalOvFlw' as SubType, TotalOvFlw as forecast) 
+  -- , struct('Total_Forecast' as SubType, Total_Forecast as forecast) 
   ] Forecast
 from one_demand_fcst_prep
 )
