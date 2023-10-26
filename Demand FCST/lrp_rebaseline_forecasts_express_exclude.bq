@@ -1,0 +1,66 @@
+-- Purpose: LRP Re-baseline FCST Express Excluded
+-- Author: Tiantian Li
+-- Last Update: 10/26/2023
+-- Notes: file uploaded into bq table from https://teams.wal-mart.com/:x:/r/sites/WalUSSCStrategyTransformation/Shared%20Documents/Wal%20US%20SC%20Strategy%20%26%20Transformation/Last%20Mile%20Strategy/1_Segments/MFC/Store%20Level%20Forecasting/Store%20Level%2010yrs%20LRP%20and%20re-baseline%20forecast.xlsx?d=wa1758764f9de46b999e791270b790ef9&csf=1&web=1&e=PnvnBs
+
+create or replace table `wmt-everest.mfc_data.lrp_rebaseline_forecasts_express_exclude` as 
+
+with struct_forecasts_ub as (
+select 
+  store
+  , [struct('FY24' as FY, FY24 as forecast) 
+  , struct('FY25' as FY, FY25 as forecast) 
+  , struct('FY26' as FY, FY26 as forecast) 
+  , struct('FY27' as FY, FY27 as forecast) 
+  , struct('FY28' as FY, FY28 as forecast) 
+  , struct('FY29' as FY, FY29 as forecast) 
+  , struct('FY30' as FY, FY30 as forecast) 
+  , struct('FY31' as FY, FY31 as forecast) 
+  , struct('FY32' as FY, FY32 as forecast) 
+  , struct('FY33' as FY, FY33 as forecast) 
+  , struct('FY34' as FY, FY34 as forecast) 
+  ] Forecast
+from wmt-everest.mfc_data.store_ub_rebaseline_fcst
+)
+
+, struct_forecasts_lb as (
+select 
+  store
+  , [struct('FY24' as FY, FY24 as forecast) 
+  , struct('FY25' as FY, FY25 as forecast) 
+  , struct('FY26' as FY, FY26 as forecast) 
+  , struct('FY27' as FY, FY27 as forecast) 
+  , struct('FY28' as FY, FY28 as forecast) 
+  , struct('FY29' as FY, FY29 as forecast) 
+  , struct('FY30' as FY, FY30 as forecast) 
+  , struct('FY31' as FY, FY31 as forecast) 
+  , struct('FY32' as FY, FY32 as forecast) 
+  , struct('FY33' as FY, FY33 as forecast) 
+  , struct('FY34' as FY, FY34 as forecast) 
+  ] Forecast
+from wmt-everest.mfc_data.store_lb_rebaseline_fcst
+)
+
+, ub_fcst_reformat as (
+select 
+  store
+  , 'UB' Type
+  , Forecast.FY FY
+  , cast(replace(Forecast.forecast,'-','0') as int64) FCST 
+from struct_forecasts_ub
+cross join unnest(struct_forecasts_ub.Forecast) AS Forecast
+)
+
+, lb_fcst_reformat as (
+select 
+  store
+  , 'LB' Type
+  , Forecast.FY FY
+  , cast(Forecast.forecast as int64) FCST 
+from struct_forecasts_lb
+cross join unnest(struct_forecasts_lb.Forecast) AS Forecast
+)
+
+select * from ub_fcst_reformat
+union all
+select * from lb_fcst_reformat
