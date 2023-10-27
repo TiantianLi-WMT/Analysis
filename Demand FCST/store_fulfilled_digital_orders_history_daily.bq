@@ -3,7 +3,7 @@
 -- Last Update: 10/26/2023
 -- Notes: Define hierachy to filter actuals by scheduled/unscheduled, express/non_express, and spark/non_spark
 
-create or replace table `wmt-everest.mfc_data.store_fulfilled_digital_orders_history` as 
+create or replace table `wmt-everest.mfc_data.store_fulfilled_digital_orders_history_daily` as 
 
 with order_history_main as (
 select distinct
@@ -82,6 +82,7 @@ select
   , quarter_id
   , month_id
   , order_week
+  , ORDER_PLCD_DT order_date
   , Scheduled_Unscheduled
   , OPD_break_down
   , Fulfillment_Type
@@ -92,4 +93,4 @@ select
   , sum(Units) Units
   , sum(GMV) GMV
 from join_results
-group by 1,2,3,4,5,6,7,8,9,10
+group by 1,2,3,4,5,6,7,8,9,10,11
