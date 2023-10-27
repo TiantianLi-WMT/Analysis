@@ -12,12 +12,12 @@ with one_demand_fcst_prep as (
 select 
   StoreId
   , concat('FY',cast(right(left(Date,4),2) as int64)+1) FY
-  -- , (sum(Sch_Delivery) + sum(Sch_Pickup) + sum(InHome)) / 360 OPD_Regular
+  , (sum(Sch_Delivery) + sum(Sch_Pickup) + sum(InHome)) / 360 OPD_Regular
   , sum(Sch_Delivery) / 360 OG_Delivery
   , sum(Sch_Pickup) / 360 OG_Pickup
   , sum(InHome) / 360 InHome_Delivery
-  -- , sum(TotalOvFlw) / 360 TotalOvFlw
-  -- , sum(Total_Forecast) / 360 Total_Forecast
+  , sum(TotalOvFlw) / 360 TotalOvFlw
+  , sum(Total_Forecast) / 360 Total_Forecast
 from `wmt-one-demand-dev.UnconstraintDigitalDemand.StoreWideChannelLevelDemandData` 
 where 1=1
   and Date >= '2023-01-01'
@@ -28,12 +28,12 @@ group by 1,2
 select 
   StoreId
   , FY
-  -- , [struct('OPD_Regular' as SubType, OPD_Regular as forecast) 
-  , [struct('OG_Delivery' as SubType, OG_Delivery as forecast) 
-  , struct('OG_Pickup' as SubType, OG_Pickup as forecast) 
-  , struct('InHome_Delivery' as SubType, InHome_Delivery as forecast) 
-  -- , struct('TotalOvFlw' as SubType, TotalOvFlw as forecast) 
-  -- , struct('Total_Forecast' as SubType, Total_Forecast as forecast) 
+  -- , [struct('OPD_Regular' as Fulfillment_Type, OPD_Regular as forecast) 
+  , [struct('OG_Delivery' as Fulfillment_Type, OG_Delivery as forecast) 
+  , struct('OG_Pickup' as Fulfillment_Type, OG_Pickup as forecast) 
+  , struct('InHome_Delivery' as Fulfillment_Type, InHome_Delivery as forecast) 
+  -- , struct('TotalOvFlw' as Fulfillment_Type, TotalOvFlw as forecast) 
+  -- , struct('Total_Forecast' as Fulfillment_Type, Total_Forecast as forecast) 
   ] Forecast
 from one_demand_fcst_prep
 )
@@ -42,7 +42,8 @@ from one_demand_fcst_prep
 select 
   StoreId
   , 'One Demand' Type
-  , Forecast.SubType SubType
+  , cast(null as string) SubType
+  , Forecast.Fulfillment_Type 
   , FY
   , cast(Forecast.forecast as int64) FCST 
 from one_demand_fcst_reformat
@@ -90,7 +91,8 @@ from wmt-everest.mfc_data.store_lb_rebaseline_fcst
 select 
   store
   , 'LRP' Type
-  , 'Ubber Bound' SubType
+  , 'Upper Bound' SubType
+  , cast(null as string) Fulfillment_Type
   , Forecast.FY FY
   , cast(replace(Forecast.forecast,'-','0') as int64) FCST 
 from struct_forecasts_ub
@@ -102,6 +104,7 @@ select
   store
   , 'LRP' Type
   , 'Lower Bound' SubType
+  , cast(null as string) Fulfillment_Type
   , Forecast.FY FY
   , cast(Forecast.forecast as int64) FCST 
 from struct_forecasts_lb
