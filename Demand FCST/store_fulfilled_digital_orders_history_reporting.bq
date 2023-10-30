@@ -116,7 +116,7 @@ union all
 select 
   site_id
   , order_week
-  , 'NonExpress_NonSpark' Metric
+  , 'OPD_NonExpress_NonSpark' Metric
   , NonExpress_NonSpark_OPD_avg Average_Orders_per_Day
   , NonExpress_NonSpark_OPD_max Max_Orders_per_Day
   , NonExpress_NonSpark_OPD_avg_nw Average_Orders_per_Day_NW_Avg
@@ -130,7 +130,7 @@ union all
 select 
   site_id
   , order_week
-  , 'NonExpress_Spark_OPD' Metric
+  , 'OPD_NonExpress_Spark' Metric
   , NonExpress_Spark_OPD_avg Average_Orders_per_Day
   , NonExpress_Spark_OPD_max Max_Orders_per_Day
   , NonExpress_Spark_OPD_avg_nw Average_Orders_per_Day_NW_Avg
@@ -144,7 +144,7 @@ union all
 select 
   site_id
   , order_week
-  , 'Express_NonSpark_OPD' Metric
+  , 'OPD_Express_NonSpark' Metric
   , Express_NonSpark_OPD_avg Average_Orders_per_Day
   , Express_NonSpark_OPD_max Max_Orders_per_Day
   , Express_NonSpark_OPD_avg_nw Average_Orders_per_Day_NW_Avg
@@ -158,7 +158,7 @@ union all
 select 
   site_id
   , order_week
-  , 'Express_Spark_OPD' Metric
+  , 'OPD_Express_Spark' Metric
   , Express_Spark_OPD_avg Average_Orders_per_Day
   , Express_Spark_OPD_max Max_Orders_per_Day
   , Express_Spark_OPD_avg_nw Average_Orders_per_Day_NW_Avg
@@ -179,7 +179,7 @@ select
   , sum(case when Fulfillment_Type = 'GM_Pickup' then Orders else 0 end) GM_Pickup
 from `wmt-everest.mfc_data.store_fulfilled_digital_orders_history_daily`
 where 1=1
-  and order_week between date_sub(date_trunc(current_date(), week(sunday)), interval 52 week) and date_trunc(current_date(), week(sunday))-1 -- lasrt 6 weeks
+  and order_week between date_sub(date_trunc(current_date(), week(sunday)), interval 52 week) and date_trunc(current_date(), week(sunday))-1 
   and Scheduled_Unscheduled = 'Unscheduled'
 group by 1,2,3
 )
@@ -204,10 +204,10 @@ group by 1,2
 select
   order_week
   , order_date
-  , sum(Orders) Unscheduled_Orders
-  , sum(case when Fulfillment_Type = 'SFS' then Orders else 0 end) SFS
-  , sum(case when Fulfillment_Type = 'DFS' then Orders else 0 end) DFS
-  , sum(case when Fulfillment_Type = 'GM_Pickup' then Orders else 0 end) GM_Pickup
+  , safe_divide(sum(Orders), count(distinct site_id))  Unscheduled_Orders
+  , safe_divide(sum(case when Fulfillment_Type = 'SFS' then Orders else 0 end), count(distinct site_id))  SFS
+  , safe_divide(sum(case when Fulfillment_Type = 'DFS' then Orders else 0 end), count(distinct site_id))  DFS
+  , safe_divide(sum(case when Fulfillment_Type = 'GM_Pickup' then Orders else 0 end), count(distinct site_id))  GM_Pickup
 from `wmt-everest.mfc_data.store_fulfilled_digital_orders_history_daily`
 where 1=1
   and order_week between date_sub(date_trunc(current_date(), week(sunday)), interval 52 week) and date_trunc(current_date(), week(sunday))-1 -- lasrt 6 weeks
