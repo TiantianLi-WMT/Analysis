@@ -40,11 +40,12 @@ group by 1,2
 select
   order_week
   , order_date
+  , count(distinct site_id) store_cnt
   , safe_divide(sum(Orders), count(distinct site_id)) OPD_Orders
-  , safe_divide(sum(case when Express_NonExpress = 'Non-Express' and Spark_NonSpark = 'Non-Spark' then Orders else 0 end), count(distinct site_id))  NonExpress_NonSpark_OPD
-  , safe_divide(sum(case when Express_NonExpress = 'Non-Express' and Spark_NonSpark = 'Spark' then Orders else 0 end), count(distinct site_id))  NonExpress_Spark_OPD
-  , safe_divide(sum(case when Express_NonExpress = 'Express' and Spark_NonSpark = 'Non-Spark' then Orders else 0 end), count(distinct site_id))  Express_NonSpark_OPD
-  , safe_divide(sum(case when Express_NonExpress = 'Express' and Spark_NonSpark = 'Spark' then Orders else 0 end), count(distinct site_id))  Express_Spark_OPD
+  , safe_divide(sum(case when Express_NonExpress = 'Non-Express' and Spark_NonSpark = 'Non-Spark' then Orders else 0 end), count(distinct case when Express_NonExpress = 'Non-Express' and Spark_NonSpark = 'Non-Spark' then site_id  else 0 end))  NonExpress_NonSpark_OPD
+  , safe_divide(sum(case when Express_NonExpress = 'Non-Express' and Spark_NonSpark = 'Spark' then Orders else 0 end), count(distinct case when Express_NonExpress = 'Non-Express' and Spark_NonSpark = 'Spark' then site_id else 0 end))  NonExpress_Spark_OPD
+  , safe_divide(sum(case when Express_NonExpress = 'Express' and Spark_NonSpark = 'Non-Spark' then Orders else 0 end), count(distinct case when Express_NonExpress = 'Express' and Spark_NonSpark = 'Non-Spark' then site_id else 0 end))  Express_NonSpark_OPD
+  , safe_divide(sum(case when Express_NonExpress = 'Express' and Spark_NonSpark = 'Spark' then Orders else 0 end), count(distinct case when Express_NonExpress = 'Express' and Spark_NonSpark = 'Spark' then site_id else 0 end))  Express_Spark_OPD
 from `wmt-everest.mfc_data.store_fulfilled_digital_orders_history_daily`
 where 1=1
   and order_week between date_sub(date_trunc(current_date(), week(sunday)), interval 100 week) and date_trunc(current_date(), week(sunday))-1 -- lasrt 6 weeks
@@ -55,6 +56,7 @@ group by 1,2
 , nw_avg_by_week as (
 select
   order_week
+  , store_cnt
   , avg(OPD_Orders) OPD_Orders_avg_nw
   , avg(NonExpress_NonSpark_OPD) NonExpress_NonSpark_OPD_avg_nw
   , avg(NonExpress_Spark_OPD) NonExpress_Spark_OPD_avg_nw
@@ -66,12 +68,13 @@ select
   , max(Express_NonSpark_OPD) Express_NonSpark_OPD_max_nw
   , max(Express_Spark_OPD) Express_Spark_OPD_max_nw
 from nw_aggregates
-group by 1
+group by 1,2
 )
 
 , nw_avg_all_time as (
 select
-  avg(OPD_Orders_avg_nw) avg_OPD_Orders_avg_nw_alltime
+  store_cnt
+  , avg(OPD_Orders_avg_nw) avg_OPD_Orders_avg_nw_alltime
   , avg(NonExpress_NonSpark_OPD_avg_nw) avg_NonExpress_NonSpark_OPD_avg_nw_alltime
   , avg(NonExpress_Spark_OPD_avg_nw) avg_NonExpress_Spark_OPD_avg_nw_alltime
   , avg(Express_NonSpark_OPD_avg_nw) avg_Express_NonSpark_OPD_avg_nw_alltime
@@ -82,6 +85,7 @@ select
   , avg(Express_NonSpark_OPD_max_nw) avg_Express_NonSpark_OPD_max_nw_alltime
   , avg(Express_Spark_OPD_max_nw) avg_Express_Spark_OPD_max_nw_alltime
 from nw_avg_by_week
+group by 1
 )
 
 , output_prep as (
@@ -98,7 +102,7 @@ select
   , rank() over (partition by a.order_week order by a.Express_NonSpark_OPD_max desc) Express_NonSpark_OPD_max_rnk
   , rank() over (partition by a.order_week order by a.Express_Spark_OPD_max desc) Express_Spark_OPD_max_rnk
   , b.* except(order_week)
-  , c.*
+  , c.* except(store_cnt)
 from site_avg a
 left join nw_avg_by_week b on a.order_week = b.order_week
 left join nw_avg_all_time c on 1=1
@@ -121,6 +125,7 @@ select
   , OPD_Orders_max_nw Max_Orders_per_Day_NW_Avg
   , avg_OPD_Orders_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
   , avg_OPD_Orders_max_nw_alltime Max_Orders_per_Day_NW_Avg_Alltime
+  , store_cnt
 from output_prep
 
 union all 
@@ -137,6 +142,7 @@ select
   , NonExpress_NonSpark_OPD_max_nw Max_Orders_per_Day_NW_Avg
   , avg_NonExpress_NonSpark_OPD_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
   , avg_NonExpress_NonSpark_OPD_max_nw_alltime Max_Orders_per_Day_NW_Avg_Alltime
+  , store_cnt
 from output_prep
 
 union all
@@ -153,6 +159,7 @@ select
   , NonExpress_Spark_OPD_max_nw Max_Orders_per_Day_NW_Avg
   , avg_NonExpress_Spark_OPD_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
   , avg_NonExpress_Spark_OPD_max_nw_alltime Max_Orders_per_Day_NW_Avg_Alltime
+  , store_cnt
 from output_prep
 
 union all
@@ -169,6 +176,7 @@ select
   , Express_NonSpark_OPD_max_nw Max_Orders_per_Day_NW_Avg
   , avg_Express_NonSpark_OPD_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
   , avg_Express_NonSpark_OPD_max_nw_alltime Max_Orders_per_Day_NW_Avg_Alltime
+  , store_cnt
 from output_prep
 
 union all
@@ -185,6 +193,7 @@ select
   , Express_Spark_OPD_max_nw Max_Orders_per_Day_NW_Avg
   , avg_Express_Spark_OPD_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
   , avg_Express_Spark_OPD_max_nw_alltime Max_Orders_per_Day_NW_Avg_Alltime
+  , store_cnt
 from output_prep
 )
 
@@ -224,10 +233,11 @@ group by 1,2
 select
   order_week
   , order_date
+  , count(distinct site_id) store_cnt
   , safe_divide(sum(Orders), count(distinct site_id))  Unscheduled_Orders
-  , safe_divide(sum(case when Fulfillment_Type = 'SFS' then Orders else 0 end), count(distinct site_id))  SFS
-  , safe_divide(sum(case when Fulfillment_Type = 'DFS' then Orders else 0 end), count(distinct site_id))  DFS
-  , safe_divide(sum(case when Fulfillment_Type = 'GM_Pickup' then Orders else 0 end), count(distinct site_id))  GM_Pickup
+  , safe_divide(sum(case when Fulfillment_Type = 'SFS' then Orders else 0 end), count(distinct case when Fulfillment_Type = 'SFS' then site_id else 0 end))  SFS
+  , safe_divide(sum(case when Fulfillment_Type = 'DFS' then Orders else 0 end), count(distinct case when Fulfillment_Type = 'DFS' then site_id else 0 end))  DFS
+  , safe_divide(sum(case when Fulfillment_Type = 'GM_Pickup' then Orders else 0 end), count(distinct case when Fulfillment_Type = 'GM_Pickup' then site_id else 0 end))  GM_Pickup
 from `wmt-everest.mfc_data.store_fulfilled_digital_orders_history_daily`
 where 1=1
   and order_week between date_sub(date_trunc(current_date(), week(sunday)), interval 100 week) and date_trunc(current_date(), week(sunday))-1 -- lasrt 6 weeks
@@ -238,6 +248,7 @@ group by 1,2
 , nw_avg_by_week_unscheduled as (
 select
   order_week
+  , store_cnt
   , avg(Unscheduled_Orders) Unscheduled_Orders_avg_nw
   , avg(SFS) SFS_avg_nw
   , avg(DFS) DFS_avg_nw
@@ -247,12 +258,13 @@ select
   , max(DFS) DFS_max_nw
   , max(GM_Pickup) GM_Pickup_max_nw
 from nw_aggregates_unscheduled
-group by 1
+group by 1,2
 )
 
 , nw_avg_all_time_unscheduled as (
 select
-  avg(Unscheduled_Orders_avg_nw) avg_Unscheduled_Orders_avg_nw_alltime
+  store_cnt
+  , avg(Unscheduled_Orders_avg_nw) avg_Unscheduled_Orders_avg_nw_alltime
   , avg(SFS_avg_nw) avg_SFS_avg_nw_alltime
   , avg(DFS_avg_nw) avg_DFS_avg_nw_alltime
   , avg(GM_Pickup_avg_nw) avg_GM_Pickup_avg_nw_alltime
@@ -261,6 +273,7 @@ select
   , avg(DFS_max_nw) avg_DFS_max_nw_alltime
   , avg(GM_Pickup_max_nw) avg_GM_Pickup_max_nw_alltime
 from nw_avg_by_week_unscheduled
+group by 1
 )
 
 
@@ -276,7 +289,7 @@ select
   , rank() over (partition by a.order_week order by a.DFS_max desc) DFS_max_rnk
   , rank() over (partition by a.order_week order by a.GM_Pickup_max desc) GM_Pickup_max_rnk
   , b.* except(order_week)
-  , c.*
+  , c.* except(store_cnt)
 from site_avg_unscheduled a
 left join nw_avg_by_week_unscheduled b on a.order_week = b.order_week
 left join nw_avg_all_time_unscheduled c on 1=1
@@ -297,6 +310,7 @@ select
   , Unscheduled_Orders_max_nw Max_Orders_per_Day_NW_Avg
   , avg_Unscheduled_Orders_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
   , avg_Unscheduled_Orders_max_nw_alltime Max_Orders_per_Day_NW_Avg_Alltime
+  , store_cnt
 from output_prep_unscheduled
 
 union all 
@@ -313,6 +327,7 @@ select
   , SFS_max_nw Max_Orders_per_Day_NW_Avg
   , avg_SFS_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
   , avg_SFS_max_nw_alltime Max_Orders_per_Day_NW_Avg_Alltime
+  , store_cnt
 from output_prep_unscheduled
 
 union all
@@ -329,6 +344,7 @@ select
   , DFS_max_nw Max_Orders_per_Day_NW_Avg
   , avg_DFS_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
   , avg_DFS_max_nw_alltime Max_Orders_per_Day_NW_Avg_Alltime
+  , store_cnt
 from output_prep_unscheduled
 
 union all
@@ -345,11 +361,32 @@ select
   , GM_Pickup_max_nw Max_Orders_per_Day_NW_Avg
   , avg_GM_Pickup_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
   , avg_GM_Pickup_max_nw_alltime Max_Orders_per_Day_NW_Avg_Alltime
+  , store_cnt
 from output_prep_unscheduled
 )
 
-
+, combined as (
 select * , 'Scheduled' Type from final_output_scheduled
 union all
 select * , 'Unscheduled' Type from final_output_unscheduled
--- where site_id = 3520
+)
+
+, assign_bucket as (
+select 
+  *
+  , case 
+      when Average_Orders_per_Day_Rank / store_cnt <= .1 then '0-10%'
+      when Average_Orders_per_Day_Rank / store_cnt <= .2 then '10-20%'
+      when Average_Orders_per_Day_Rank / store_cnt <= .3 then '20-30%'
+      when Average_Orders_per_Day_Rank / store_cnt <= .4 then '30-40%'
+      when Average_Orders_per_Day_Rank / store_cnt <= .5 then '40-50%'
+      when Average_Orders_per_Day_Rank / store_cnt <= .6 then '50-60%'
+      when Average_Orders_per_Day_Rank / store_cnt <= .7 then '60-70%'
+      when Average_Orders_per_Day_Rank / store_cnt <= .8 then '70-80%'
+      when Average_Orders_per_Day_Rank / store_cnt <= .9 then '80-90%'
+      when Average_Orders_per_Day_Rank / store_cnt <= 1 then '90-100%'
+    else null end Top_Percentile_Bucket
+from combined
+)
+
+select * from assign_bucket
