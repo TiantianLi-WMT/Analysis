@@ -13,7 +13,7 @@ select
   , sum(case when Express_NonExpress = 'Express' and Spark_NonSpark = 'Spark' then Orders else 0 end) Express_Spark_OPD
 from `wmt-everest.mfc_data.store_fulfilled_digital_orders_history_daily`
 where 1=1
-  and order_week between date_sub(date_trunc(current_date(), week(sunday)), interval 52 week) and date_trunc(current_date(), week(sunday))-1 -- lasrt 6 weeks
+  and order_week between date_sub(date_trunc(current_date(), week(sunday)), interval 100 week) and date_trunc(current_date(), week(sunday))-1 -- lasrt 6 weeks
   and Scheduled_Unscheduled = 'Scheduled'
 group by 1,2,3
 )
@@ -47,7 +47,7 @@ select
   , safe_divide(sum(case when Express_NonExpress = 'Express' and Spark_NonSpark = 'Spark' then Orders else 0 end), count(distinct site_id))  Express_Spark_OPD
 from `wmt-everest.mfc_data.store_fulfilled_digital_orders_history_daily`
 where 1=1
-  and order_week between date_sub(date_trunc(current_date(), week(sunday)), interval 52 week) and date_trunc(current_date(), week(sunday))-1 -- lasrt 6 weeks
+  and order_week between date_sub(date_trunc(current_date(), week(sunday)), interval 100 week) and date_trunc(current_date(), week(sunday))-1 -- lasrt 6 weeks
   and Scheduled_Unscheduled = 'Scheduled'
 group by 1,2
 )
@@ -87,6 +87,16 @@ from nw_avg_by_week
 , output_prep as (
 select 
   a.*
+  , rank() over (partition by a.order_week order by a.OPD_Orders_avg desc) OPD_Orders_avg_rnk
+  , rank() over (partition by a.order_week order by a.NonExpress_NonSpark_OPD_avg desc) NonExpress_NonSpark_OPD_avg_rnk
+  , rank() over (partition by a.order_week order by a.NonExpress_Spark_OPD_avg desc) NonExpress_Spark_OPD_avg_rnk
+  , rank() over (partition by a.order_week order by a.Express_NonSpark_OPD_avg desc) Express_NonSpark_OPD_avg_rnk
+  , rank() over (partition by a.order_week order by a.Express_Spark_OPD_avg desc) Express_Spark_OPD_avg_rnk
+  , rank() over (partition by a.order_week order by a.OPD_Orders_max desc) OPD_Orders_max_rnk
+  , rank() over (partition by a.order_week order by a.NonExpress_NonSpark_OPD_max desc) NonExpress_NonSpark_OPD_max_rnk
+  , rank() over (partition by a.order_week order by a.NonExpress_Spark_OPD_max desc) NonExpress_Spark_OPD_max_rnk
+  , rank() over (partition by a.order_week order by a.Express_NonSpark_OPD_max desc) Express_NonSpark_OPD_max_rnk
+  , rank() over (partition by a.order_week order by a.Express_Spark_OPD_max desc) Express_Spark_OPD_max_rnk
   , b.* except(order_week)
   , c.*
 from site_avg a
@@ -104,7 +114,9 @@ select
   , order_week
   , 'OPD_ALL' Metric
   , OPD_Orders_avg Average_Orders_per_Day
+  , OPD_Orders_avg_rnk Average_Orders_per_Day_Rank
   , OPD_Orders_max Max_Orders_per_Day
+  , OPD_Orders_max_rnk Max_Orders_per_Day_Rank
   , OPD_Orders_avg_nw Average_Orders_per_Day_NW_Avg
   , OPD_Orders_max_nw Max_Orders_per_Day_NW_Avg
   , avg_OPD_Orders_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
@@ -118,7 +130,9 @@ select
   , order_week
   , 'OPD_NonExpress_NonSpark' Metric
   , NonExpress_NonSpark_OPD_avg Average_Orders_per_Day
+  , NonExpress_NonSpark_OPD_avg_rnk Average_Orders_per_Day_Rank
   , NonExpress_NonSpark_OPD_max Max_Orders_per_Day
+  , NonExpress_NonSpark_OPD_max_rnk Max_Orders_per_Day_Rank
   , NonExpress_NonSpark_OPD_avg_nw Average_Orders_per_Day_NW_Avg
   , NonExpress_NonSpark_OPD_max_nw Max_Orders_per_Day_NW_Avg
   , avg_NonExpress_NonSpark_OPD_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
@@ -132,7 +146,9 @@ select
   , order_week
   , 'OPD_NonExpress_Spark' Metric
   , NonExpress_Spark_OPD_avg Average_Orders_per_Day
+  , NonExpress_Spark_OPD_avg_rnk Average_Orders_per_Day_Rank
   , NonExpress_Spark_OPD_max Max_Orders_per_Day
+  , NonExpress_Spark_OPD_max_rnk Max_Orders_per_Day_Rank
   , NonExpress_Spark_OPD_avg_nw Average_Orders_per_Day_NW_Avg
   , NonExpress_Spark_OPD_max_nw Max_Orders_per_Day_NW_Avg
   , avg_NonExpress_Spark_OPD_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
@@ -146,7 +162,9 @@ select
   , order_week
   , 'OPD_Express_NonSpark' Metric
   , Express_NonSpark_OPD_avg Average_Orders_per_Day
+  , Express_NonSpark_OPD_avg_rnk Average_Orders_per_Day_Rank
   , Express_NonSpark_OPD_max Max_Orders_per_Day
+  , Express_NonSpark_OPD_max_rnk Max_Orders_per_Day_Rank
   , Express_NonSpark_OPD_avg_nw Average_Orders_per_Day_NW_Avg
   , Express_NonSpark_OPD_max_nw Max_Orders_per_Day_NW_Avg
   , avg_Express_NonSpark_OPD_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
@@ -160,7 +178,9 @@ select
   , order_week
   , 'OPD_Express_Spark' Metric
   , Express_Spark_OPD_avg Average_Orders_per_Day
+  , Express_Spark_OPD_avg_rnk Average_Orders_per_Day_Rank
   , Express_Spark_OPD_max Max_Orders_per_Day
+  , Express_Spark_OPD_max_rnk Max_Orders_per_Day_Rank
   , Express_Spark_OPD_avg_nw Average_Orders_per_Day_NW_Avg
   , Express_Spark_OPD_max_nw Max_Orders_per_Day_NW_Avg
   , avg_Express_Spark_OPD_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
@@ -210,7 +230,7 @@ select
   , safe_divide(sum(case when Fulfillment_Type = 'GM_Pickup' then Orders else 0 end), count(distinct site_id))  GM_Pickup
 from `wmt-everest.mfc_data.store_fulfilled_digital_orders_history_daily`
 where 1=1
-  and order_week between date_sub(date_trunc(current_date(), week(sunday)), interval 52 week) and date_trunc(current_date(), week(sunday))-1 -- lasrt 6 weeks
+  and order_week between date_sub(date_trunc(current_date(), week(sunday)), interval 100 week) and date_trunc(current_date(), week(sunday))-1 -- lasrt 6 weeks
   and Scheduled_Unscheduled = 'Unscheduled'
 group by 1,2
 )
@@ -243,9 +263,18 @@ select
 from nw_avg_by_week_unscheduled
 )
 
+
 , output_prep_unscheduled as (
 select 
   a.*
+  , rank() over (partition by a.order_week order by a.Unscheduled_Orders_avg desc) Unscheduled_Orders_avg_rnk
+  , rank() over (partition by a.order_week order by a.SFS_avg desc) SFS_avg_rnk
+  , rank() over (partition by a.order_week order by a.DFS_avg desc) DFS_avg_rnk
+  , rank() over (partition by a.order_week order by a.GM_Pickup_avg desc) GM_Pickup_avg_rnk
+  , rank() over (partition by a.order_week order by a.Unscheduled_Orders_max desc) Unscheduled_Orders_max_rnk
+  , rank() over (partition by a.order_week order by a.SFS_max desc) SFS_max_rnk
+  , rank() over (partition by a.order_week order by a.DFS_max desc) DFS_max_rnk
+  , rank() over (partition by a.order_week order by a.GM_Pickup_max desc) GM_Pickup_max_rnk
   , b.* except(order_week)
   , c.*
 from site_avg_unscheduled a
@@ -261,7 +290,9 @@ select
   , order_week
   , 'Unscheduled' Metric
   , Unscheduled_Orders_avg Average_Orders_per_Day
+  , Unscheduled_Orders_avg_rnk Average_Orders_per_Day_Rank
   , Unscheduled_Orders_max Max_Orders_per_Day
+  , Unscheduled_Orders_max_rnk Max_Orders_per_Day_Rank
   , Unscheduled_Orders_avg_nw Average_Orders_per_Day_NW_Avg
   , Unscheduled_Orders_max_nw Max_Orders_per_Day_NW_Avg
   , avg_Unscheduled_Orders_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
@@ -275,7 +306,9 @@ select
   , order_week
   , 'SFS' Metric
   , SFS_avg Average_Orders_per_Day
+  , SFS_avg_rnk Average_Orders_per_Day_Rank
   , SFS_max Max_Orders_per_Day
+  , SFS_max_rnk Max_Orders_per_Day_Rank
   , SFS_avg_nw Average_Orders_per_Day_NW_Avg
   , SFS_max_nw Max_Orders_per_Day_NW_Avg
   , avg_SFS_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
@@ -289,7 +322,9 @@ select
   , order_week
   , 'DFS' Metric
   , DFS_avg Average_Orders_per_Day
+  , DFS_avg_rnk Average_Orders_per_Day_Rank
   , DFS_max Max_Orders_per_Day
+  , DFS_max_rnk Max_Orders_per_Day_Rank
   , DFS_avg_nw Average_Orders_per_Day_NW_Avg
   , DFS_max_nw Max_Orders_per_Day_NW_Avg
   , avg_DFS_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
@@ -303,7 +338,9 @@ select
   , order_week
   , 'GM_Pickup' Metric
   , GM_Pickup_avg Average_Orders_per_Day
+  , GM_Pickup_avg_rnk Average_Orders_per_Day_Rank
   , GM_Pickup_max Max_Orders_per_Day
+  , GM_Pickup_max_rnk Max_Orders_per_Day_Rank
   , GM_Pickup_avg_nw Average_Orders_per_Day_NW_Avg
   , GM_Pickup_max_nw Max_Orders_per_Day_NW_Avg
   , avg_GM_Pickup_avg_nw_alltime Average_Orders_per_Day_NW_Avg_Alltime
@@ -316,4 +353,3 @@ select * , 'Scheduled' Type from final_output_scheduled
 union all
 select * , 'Unscheduled' Type from final_output_unscheduled
 -- where site_id = 3520
-
