@@ -56,7 +56,7 @@ group by 1,2
 , nw_avg_by_week as (
 select
   order_week
-  , store_cnt
+  , max(store_cnt) store_cnt
   , avg(OPD_Orders) OPD_Orders_avg_nw
   , avg(NonExpress_NonSpark_OPD) NonExpress_NonSpark_OPD_avg_nw
   , avg(NonExpress_Spark_OPD) NonExpress_Spark_OPD_avg_nw
@@ -68,7 +68,7 @@ select
   , max(Express_NonSpark_OPD) Express_NonSpark_OPD_max_nw
   , max(Express_Spark_OPD) Express_Spark_OPD_max_nw
 from nw_aggregates
-group by 1,2
+group by 1
 )
 
 , nw_avg_all_time as (
@@ -248,7 +248,7 @@ group by 1,2
 , nw_avg_by_week_unscheduled as (
 select
   order_week
-  , store_cnt
+  , max(store_cnt) store_cnt
   , avg(Unscheduled_Orders) Unscheduled_Orders_avg_nw
   , avg(SFS) SFS_avg_nw
   , avg(DFS) DFS_avg_nw
@@ -258,7 +258,7 @@ select
   , max(DFS) DFS_max_nw
   , max(GM_Pickup) GM_Pickup_max_nw
 from nw_aggregates_unscheduled
-group by 1,2
+group by 1
 )
 
 , nw_avg_all_time_unscheduled as (
