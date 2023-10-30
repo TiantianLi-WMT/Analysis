@@ -41,7 +41,7 @@ select distinct
   , sum(gmv_order_amt) GMV
 from wmt-edw-prod.WW_CREW_DL_RPT_VM.CNSLD_ORDER_ITEM
 where 1=1
-  and ORDER_PLCD_DT between date_trunc('2023-02-01', week(sunday)) and date_trunc(current_date(), week(sunday)) - 1  -- FY24 YTD
+  and ORDER_PLCD_DT between date_trunc('2022-02-01', week(sunday)) and date_trunc(current_date(), week(sunday))
   and op_cmpny_cd = 'WMT.COM'
   and fulfmt_status_desc = 'SHIPPED'
   and net_cncl_qty > 0
