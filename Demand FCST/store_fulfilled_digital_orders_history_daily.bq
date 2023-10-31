@@ -34,7 +34,7 @@ select distinct
       when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('IN_HOME_DELIVERY','INHOME') then "InHome_Delivery"
       when upper(svc_nm) in ('SFS','SI') and svc_fulfmt_type_desc in ('UNSCHEDULED_DELIVERY') and ozark_ind =1 THEN 'DFS'
       when upper(svc_nm) in ('SFS','SI') and svc_fulfmt_type_desc in ('UNSCHEDULED_DELIVERY') and ozark_ind =0 THEN 'SFS'
-      when svc_fulfmt_type_desc in ('UNSCHEDULED_PICKUP') then 'GM_Pickup' -- all unscheduled pickup has svc_nm = SI and ozark_ind = 0
+      when svc_fulfmt_type_desc in ('UNSCHEDULED_PICKUP','PICKUPTODAY') then 'GM_Pickup' -- all unscheduled pickup has svc_nm = SI and ozark_ind = 0
       else "Other" end Fulfillment_Type  
   , case when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('EXPRESS_DELIVERY', 'EXPRESS_PICKUP') then 'Express' else 'Non-Express' end Express_NonExpress
   , sum(net_cncl_qty) Units
