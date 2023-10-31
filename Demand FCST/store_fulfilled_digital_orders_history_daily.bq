@@ -1,6 +1,6 @@
 -- Purpose: FY24 YTD Actuals of Store Fulfiilled Digital Orders
 -- Author: Tiantian Li
--- Last Update: 10/26/2023
+-- Last Update: 10/31/2023
 -- Notes: Define hierachy to filter actuals by scheduled/unscheduled, express/non_express, and spark/non_spark
 
 create or replace table `wmt-everest.mfc_data.store_fulfilled_digital_orders_history_daily` as 
@@ -19,12 +19,12 @@ select distinct
   , date_trunc(ORDER_PLCD_DT, week) order_week
   , case
       when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('SCHEDULED_DELIVERY','SCHEDULED_PICKUP','IN_HOME_DELIVERY','INHOME','EXPRESS_DELIVERY', 'EXPRESS_PICKUP') then 'Scheduled'
-      when (upper(svc_nm) in ('SFS','SI') and svc_fulfmt_type_desc in ('UNSCHEDULED_DELIVERY')) or (svc_fulfmt_type_desc = 'UNSCHEDULED_PICKUP') then 'Unscheduled'
+      when (upper(svc_nm) in ('SFS','SI') and svc_fulfmt_type_desc in ('UNSCHEDULED_DELIVERY')) or (svc_fulfmt_type_desc in ('UNSCHEDULED_PICKUP','PICKUPTODAY')) then 'Unscheduled'
       else 'Other' end Scheduled_Unscheduled
   , case
       when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('SCHEDULED_DELIVERY','SCHEDULED_PICKUP','IN_HOME_DELIVERY','INHOME') then "OPD_Regular"
       when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('EXPRESS_DELIVERY','EXPRESS_PICKUP') then "OPD_Express"
-      when (upper(svc_nm) in ('SFS','SI') and svc_fulfmt_type_desc in ('UNSCHEDULED_DELIVERY')) or (svc_fulfmt_type_desc = 'UNSCHEDULED_PICKUP') then 'Unscheduled'
+      when (upper(svc_nm) in ('SFS','SI') and svc_fulfmt_type_desc in ('UNSCHEDULED_DELIVERY')) or (svc_fulfmt_type_desc in ('UNSCHEDULED_PICKUP','PICKUPTODAY')) then 'Unscheduled'
       else "Other" end OPD_break_down
   , case
       when upper(svc_nm) IN ('SI', 'OG') and svc_fulfmt_type_desc in ('SCHEDULED_DELIVERY') then "OG_Delivery_Regular"
