@@ -1,4 +1,3 @@
-
 create or replace table `wmt-everest.mfc_data.store_fulfilled_digital_orders_history_reporting` as
 
 with daily_aggregates as (
@@ -42,10 +41,10 @@ select
   , order_date
   -- , count(distinct site_id) store_cnt
   , safe_divide(sum(Orders), count(distinct site_id)) OPD_Orders
-  , safe_divide(sum(case when Express_NonExpress = 'Non-Express' and Spark_NonSpark = 'Non-Spark' then Orders else 0 end), count(distinct case when Express_NonExpress = 'Non-Express' and Spark_NonSpark = 'Non-Spark' then site_id  else 0 end))  NonExpress_NonSpark_OPD
-  , safe_divide(sum(case when Express_NonExpress = 'Non-Express' and Spark_NonSpark = 'Spark' then Orders else 0 end), count(distinct case when Express_NonExpress = 'Non-Express' and Spark_NonSpark = 'Spark' then site_id else 0 end))  NonExpress_Spark_OPD
-  , safe_divide(sum(case when Express_NonExpress = 'Express' and Spark_NonSpark = 'Non-Spark' then Orders else 0 end), count(distinct case when Express_NonExpress = 'Express' and Spark_NonSpark = 'Non-Spark' then site_id else 0 end))  Express_NonSpark_OPD
-  , safe_divide(sum(case when Express_NonExpress = 'Express' and Spark_NonSpark = 'Spark' then Orders else 0 end), count(distinct case when Express_NonExpress = 'Express' and Spark_NonSpark = 'Spark' then site_id else 0 end))  Express_Spark_OPD
+  , safe_divide(sum(case when Express_NonExpress = 'Non-Express' and Spark_NonSpark = 'Non-Spark' then Orders else 0 end), count(distinct site_id))  NonExpress_NonSpark_OPD
+  , safe_divide(sum(case when Express_NonExpress = 'Non-Express' and Spark_NonSpark = 'Spark' then Orders else 0 end), count(distinct site_id))  NonExpress_Spark_OPD
+  , safe_divide(sum(case when Express_NonExpress = 'Express' and Spark_NonSpark = 'Non-Spark' then Orders else 0 end), count(distinct site_id))  Express_NonSpark_OPD
+  , safe_divide(sum(case when Express_NonExpress = 'Express' and Spark_NonSpark = 'Spark' then Orders else 0 end), count(distinct site_id))  Express_Spark_OPD
 from `wmt-everest.mfc_data.store_fulfilled_digital_orders_history_daily`
 where 1=1
   and order_week between date_sub(date_trunc(current_date(), week(sunday)), interval 100 week) and date_trunc(current_date(), week(sunday))-1 -- lasrt 6 weeks
@@ -235,9 +234,9 @@ select
   , order_date
   -- , count(distinct site_id) store_cnt
   , safe_divide(sum(Orders), count(distinct site_id))  Unscheduled_Orders
-  , safe_divide(sum(case when Fulfillment_Type = 'SFS' then Orders else 0 end), count(distinct case when Fulfillment_Type = 'SFS' then site_id else 0 end))  SFS
-  , safe_divide(sum(case when Fulfillment_Type = 'DFS' then Orders else 0 end), count(distinct case when Fulfillment_Type = 'DFS' then site_id else 0 end))  DFS
-  , safe_divide(sum(case when Fulfillment_Type = 'GM_Pickup' then Orders else 0 end), count(distinct case when Fulfillment_Type = 'GM_Pickup' then site_id else 0 end))  GM_Pickup
+  , safe_divide(sum(case when Fulfillment_Type = 'SFS' then Orders else 0 end), count(distinct site_id))   SFS
+  , safe_divide(sum(case when Fulfillment_Type = 'DFS' then Orders else 0 end), count(distinct site_id))  DFS
+  , safe_divide(sum(case when Fulfillment_Type = 'GM_Pickup' then Orders else 0 end), count(distinct site_id))   GM_Pickup
 from `wmt-everest.mfc_data.store_fulfilled_digital_orders_history_daily`
 where 1=1
   and order_week between date_sub(date_trunc(current_date(), week(sunday)), interval 100 week) and date_trunc(current_date(), week(sunday))-1 -- lasrt 6 weeks
