@@ -17,6 +17,7 @@ select
   , sum(Sch_Pickup) / 360 OG_Pickup
   , sum(InHome) / 360 InHome_Delivery
   , sum(TotalOvFlw) / 360 TotalOvFlw
+  , sum(Exp_delivery) / 360 Exp_delivery
   , sum(Total_Forecast) / 360 Total_Forecast
 from `wmt-one-demand-dev.UnconstraintDigitalDemand.StoreWideChannelLevelDemandData` 
 where 1=1
@@ -32,7 +33,7 @@ select
   , [struct('OG_Delivery' as Fulfillment_Type, OG_Delivery as forecast) 
   , struct('OG_Pickup' as Fulfillment_Type, OG_Pickup as forecast) 
   , struct('InHome_Delivery' as Fulfillment_Type, InHome_Delivery as forecast) 
-  -- , struct('TotalOvFlw' as Fulfillment_Type, TotalOvFlw as forecast) 
+  , struct('TotalOvFlw' as Fulfillment_Type, TotalOvFlw as forecast) 
   -- , struct('Total_Forecast' as Fulfillment_Type, Total_Forecast as forecast) 
   ] Forecast
 from one_demand_fcst_prep
