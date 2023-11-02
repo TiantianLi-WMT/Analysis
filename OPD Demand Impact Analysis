@@ -1,0 +1,69 @@
+with OPD_regular as (
+select
+  site_id
+  , sum(Orders) Orders_OPD_regular
+  , sum(POs) POs_OPD_regular
+  , sum(Units) Units_OPD_regular
+  , sum(GMV) GMV_OPD_regular
+from `wmt-everest.mfc_data.store_fulfilled_digital_orders_history_daily` 
+where year_id = 2023
+  and Express_NonExpress = 'Non-Express'
+  and Spark_NonSpark = 'Non-Spark'
+  and Scheduled_Unscheduled = 'Scheduled'
+  and OPD_break_down = 'OPD_Regular'
+group by 1
+)
+
+, unscheduled as (
+select
+  site_id
+  , sum(Orders) Orders_Unscheduled
+  , sum(POs) POs_Unscheduled
+  , sum(Units) Units_Unscheduled
+  , sum(GMV) GMV_Unscheduled
+from `wmt-everest.mfc_data.store_fulfilled_digital_orders_history_daily` 
+where year_id = 2023
+  and Scheduled_Unscheduled = 'Unscheduled'
+group by 1
+)
+
+, ytd_results as (
+select 
+  a.*
+  , b.* except(site_id)
+  , a.Orders_OPD_regular + b.Orders_Unscheduled Combined_Orders
+  , a.POs_OPD_regular + b.POs_Unscheduled Combined_POs
+  , a.Units_OPD_regular + b.Units_Unscheduled Combined_units
+  , a.GMV_OPD_regular + b.GMV_Unscheduled Combined_GMV
+  , rank() over(order by a.Orders_OPD_regular desc) OPD_regular_order_Rank
+  , rank() over(order by b.Orders_Unscheduled desc) Unscheduled_order_Rank
+  , rank() over(order by (a.Orders_OPD_regular + b.Orders_Unscheduled) desc) Combined_order_Rank
+from OPD_regular a
+left join unscheduled b on a.site_id = b.site_id
+)
+
+select 
+  a.*
+  , b.SUBDIV_NM
+  , b.market_id
+  , b.list_of_stores
+  , b.cbsa
+  , b.Type
+  , b.Current_Soln
+  , b.avg_UPLH
+  , b.GMV_scheduled
+  , b.GMV_unscheduled
+  , b.current_demand
+  , b.FY24_Cap
+  , b.Current_demand_percentile_bucket
+  , b.FY29_UB_percentile_bucket
+  , b.Remodel_Date
+  , b.Remodel_MPC_raw
+  , b.Latest_MPC_assumption_after_remodel
+  , b.MFC_FY_Approved
+  , b.MFC_MPC_Approved
+  , b.Final_MFC_type
+  , b.Status
+from ytd_results a
+left join wmt-everest.mfc_data.top_market_analysis_store_level_summary b on a.site_id = b.site_nbr
+
