@@ -1,8 +1,7 @@
 -- Purpose: LRP Re-baseline FCST Express Excluded & One Demand FCST
 -- Author: Tiantian Li
--- Last Update: 10/26/2023
+-- Last Update: 11/2/2023
 -- Notes: file uploaded into bq table from https://teams.wal-mart.com/:x:/r/sites/WalUSSCStrategyTransformation/Shared%20Documents/Wal%20US%20SC%20Strategy%20%26%20Transformation/Last%20Mile%20Strategy/1_Segments/MFC/Store%20Level%20Forecasting/Store%20Level%2010yrs%20LRP%20and%20re-baseline%20forecast.xlsx?d=wa1758764f9de46b999e791270b790ef9&csf=1&web=1&e=PnvnBs
-
 
 
 create or replace table `wmt-everest.mfc_data.lrp_rebaseline_forecasts_express_exclude_and_one_demand_fcst` as 
@@ -43,7 +42,7 @@ from one_demand_fcst_prep
 select 
   StoreId
   , 'One Demand' Type
-  , cast(null as string) SubType
+  , cast('One Demand' as string) SubType
   , Forecast.Fulfillment_Type 
   , FY
   , cast(Forecast.forecast as int64) FCST 
