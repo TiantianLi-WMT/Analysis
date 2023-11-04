@@ -1,6 +1,6 @@
 -- Purpose: LRP Re-baseline FCST Express Excluded & One Demand FCST
 -- Author: Tiantian Li
--- Last Update: 11/2/2023
+-- Last Update: 11/3/2023
 -- Notes: file uploaded into bq table from https://teams.wal-mart.com/:x:/r/sites/WalUSSCStrategyTransformation/Shared%20Documents/Wal%20US%20SC%20Strategy%20%26%20Transformation/Last%20Mile%20Strategy/1_Segments/MFC/Store%20Level%20Forecasting/Store%20Level%2010yrs%20LRP%20and%20re-baseline%20forecast.xlsx?d=wa1758764f9de46b999e791270b790ef9&csf=1&web=1&e=PnvnBs
 
 
@@ -117,6 +117,46 @@ union all
 select * from lb_fcst_reformat
 )
 
+-- unscheduled forecast
+, struct_fcst_unscheduled as (
+select 
+  site_id
+  , [struct('DFS' as Fulfillment_Type, 'FY24' as FY, dfs_fy24 as forecast) 
+  , struct('DFS' as Fulfillment_Type,'FY25' as FY, dfs_fy25 as forecast) 
+  , struct('DFS' as Fulfillment_Type,'FY26' as FY, dfs_fy26 as forecast) 
+  , struct('DFS' as Fulfillment_Type,'FY27' as FY, dfs_fy27 as forecast) 
+  , struct('DFS' as Fulfillment_Type,'FY28' as FY, dfs_fy28 as forecast) 
+  , struct('DFS' as Fulfillment_Type,'FY29' as FY, dfs_fy29 as forecast) 
+  , struct('SFS' as Fulfillment_Type,'FY24' as FY, sfs_fy24 as forecast) 
+  , struct('SFS' as Fulfillment_Type,'FY25' as FY, sfs_fy25 as forecast) 
+  , struct('SFS' as Fulfillment_Type,'FY26' as FY, sfs_fy26 as forecast) 
+  , struct('SFS' as Fulfillment_Type,'FY27' as FY, sfs_fy27 as forecast) 
+  , struct('SFS' as Fulfillment_Type,'FY28' as FY, sfs_fy28 as forecast) 
+  , struct('SFS' as Fulfillment_Type,'FY29' as FY, sfs_fy29 as forecast) 
+  , struct('GM_Pickup' as Fulfillment_Type,'FY24' as FY, GM_pickup_fy24 as forecast) 
+  , struct('GM_Pickup' as Fulfillment_Type,'FY25' as FY, GM_pickup_fy25 as forecast) 
+  , struct('GM_Pickup' as Fulfillment_Type,'FY26' as FY, GM_pickup_fy26 as forecast) 
+  , struct('GM_Pickup' as Fulfillment_Type,'FY27' as FY, GM_pickup_fy27 as forecast) 
+  , struct('GM_Pickup' as Fulfillment_Type,'FY28' as FY, GM_pickup_fy28 as forecast) 
+  , struct('GM_Pickup' as Fulfillment_Type,'FY29' as FY, GM_pickup_fy29 as forecast) 
+  ] Forecast
+from wmt-everest.mfc_data.unscheduled_lrp_fcst
+)
+
+, fcst_unscheduled_reformat as (
+select 
+  site_id store
+  , 'LRP' Type
+  , 'Unscheduled' SubType
+  , Forecast.Fulfillment_Type Fulfillment_Type
+  , Forecast.FY FY
+  , Forecast.forecast FCST 
+from struct_fcst_unscheduled
+cross join unnest(struct_fcst_unscheduled.Forecast) AS Forecast
+)
+
 select * from lrp_fcst_ready
 union all 
 select * from one_demand_fcst_ready
+union all
+select * from fcst_unscheduled_reformat
