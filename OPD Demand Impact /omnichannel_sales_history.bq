@@ -1,0 +1,93 @@
+-- Purpose: Selective Sales Data from Finance table
+-- Author: Tiantian Li
+-- Last Update: 11/03/2023
+-- Notes: n.a.
+
+
+create or replace table `wmt-everest.mfc_data.omnichannel_sales_history` as
+
+select 
+  OP_CMPNY_CD
+  -- timeframe
+  , WM_FULL_YR_NBR
+  , WM_QTR_NBR
+  , WM_MTH_NBR
+  , WM_MTH_ABBR
+  , WM_WK_NBR
+  , WM_YR_WK_NBR
+  -- store attributes
+  , STORE_NBR
+  , STORE_NM
+  , POSTAL_CD
+  , BANNER_CD
+  , BANNER_DESC
+  , LAT_DGR
+  , LONG_DGR
+  , MARKET_NBR
+  , MARKET_NM
+  , GRAND_OPEN_DT
+  , OPEN_STATUS_CD
+  , OPEN_STATUS_DESC
+  , REGION_NBR
+  , REGION_NM
+  , STATE_PROV_CD
+  , STORE_SIZE_SQFT
+  , STORE_TYPE_DESC
+  , SUBDIV_NM
+  -- sales channel
+  , SRC_TYPE_NM
+  , CHNL_TYPE_ID
+  , CHNL_SUBTYPE_ID
+  , FULFMT_TYPE_ID
+  , FULFMT_TYPE_DESC
+  , INSTACART_IND
+  , POS_DEPT_NBR
+  , CHNL_TYPE_DESC
+  , CHNL_SUBTYPE_DESC
+  , CHNL_ACTV_GRP_NBR
+  , CHNL_ACTV_GRP_DESC
+  , DSV_IND
+  -- item hierachy 
+  , ITEM_NBR
+  , ITEM_DESC_1
+  , ITEM_DESC_2
+  , UPC_SRC_NBR
+  , UPC_DESC
+  , VENDOR_NBR
+  , VENDOR_NM
+  , BRAND_ID
+  , BRAND_NM
+  , BRAND_OWNR_ID
+  , BRAND_OWNR_NM
+  , FIN_SEG_NBR
+  , FIN_SEG_DESC
+  , FIN_SUBGROUP_NBR
+  , FIN_SUBGROUP_DESC
+  , DEPT_NBR
+  , DEPT_DESC
+  , ACCTG_DEPT_NBR
+  , ACCTG_DEPT_DESC
+  , DEPT_CATG_GRP_NBR
+  , DEPT_CATG_GRP_DESC
+  , DEPT_SUBCATG_NBR
+  , DEPT_SUBCATG_DESC
+  , ITEM_STATUS_CD
+  , SEASN_CD
+  , SEASN_DESC
+  , SEASN_YR
+  , WHSE_ALGN_TYPE_CD
+  , SRC_OF_ORIGN_CD
+  , CHNL_BASE_DESC
+  , CHNL_CONS_HIER_LVL_0_DESC
+  , CHNL_CONS_HIER_LVL_1_DESC
+  , sum(SALES_AMT) sales_amt
+  , sum(uom_qty) uom_qty
+from `wmt-edw-prod.US_FIN_SALES_DL_RPT_VM.WMT_STORE_SALES_ITEM_DLY_D`
+where 1=1
+  and WM_FULL_YR_NBR in (2023, 2024)
+  and OP_CMPNY_CD = 'WMT-US'  
+  and OTHER_INCOME_IND = 0
+  and ACCTG_DEPT_NBR not in (50, 75)
+group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33
+,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66
+,67,68,69
