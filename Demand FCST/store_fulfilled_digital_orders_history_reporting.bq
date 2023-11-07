@@ -374,17 +374,17 @@ select * , 'Unscheduled' Type from final_output_unscheduled
 select 
   *
   , case 
-      when Average_Orders_per_Day_Rank / 4626 <= .1 then '0-10%'
-      when Average_Orders_per_Day_Rank / 4626 <= .2 then '10-20%'
-      when Average_Orders_per_Day_Rank / 4626 <= .3 then '20-30%'
-      when Average_Orders_per_Day_Rank / 4626 <= .4 then '30-40%'
-      when Average_Orders_per_Day_Rank / 4626 <= .5 then '40-50%'
-      when Average_Orders_per_Day_Rank / 4626 <= .6 then '50-60%'
-      when Average_Orders_per_Day_Rank / 4626 <= .7 then '60-70%'
-      when Average_Orders_per_Day_Rank / 4626 <= .8 then '70-80%'
-      when Average_Orders_per_Day_Rank / 4626 <= .9 then '80-90%'
-      when Average_Orders_per_Day_Rank / 4626 <= 1 then '90-100%'
-    else null end Top_Percentile_Bucket
+      when Average_Orders_per_Day > 0 and Average_Orders_per_Day_Rank / 4626 <= .1 then '0-10%'
+      when Average_Orders_per_Day > 0 and Average_Orders_per_Day_Rank / 4626 <= .2 then '10-20%'
+      when Average_Orders_per_Day > 0 and Average_Orders_per_Day_Rank / 4626 <= .3 then '20-30%'
+      when Average_Orders_per_Day > 0 and Average_Orders_per_Day_Rank / 4626 <= .4 then '30-40%'
+      when Average_Orders_per_Day > 0 and Average_Orders_per_Day_Rank / 4626 <= .5 then '40-50%'
+      when Average_Orders_per_Day > 0 and Average_Orders_per_Day_Rank / 4626 <= .6 then '50-60%'
+      when Average_Orders_per_Day > 0 and Average_Orders_per_Day_Rank / 4626 <= .7 then '60-70%'
+      when Average_Orders_per_Day > 0 and Average_Orders_per_Day_Rank / 4626 <= .8 then '70-80%'
+      when Average_Orders_per_Day > 0 and Average_Orders_per_Day_Rank / 4626 <= .9 then '80-90%'
+      when Average_Orders_per_Day > 0 and Average_Orders_per_Day_Rank / 4626 <= 1 then '90-100%'
+    else 'N/A' end Top_Percentile_Bucket
 from combined
 )
 
